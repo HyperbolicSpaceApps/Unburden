@@ -1,4 +1,4 @@
-package com.example.unburden_app
+package com.hyperbolicspaceapps.unburden_app
 
 import io.flutter.embedding.android.FlutterActivity
 

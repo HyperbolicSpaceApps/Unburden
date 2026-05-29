@@ -349,3 +349,53 @@ And a clean swap layer:
 LlmClient
  ├── Mock (tests + dev UI)
  └── Groq (future production AI)
+
+
+
+
+ Here's a summary to paste into your next session:
+ 
+ ---
+ 
+ **Project:** Unburden — Flutter/Dart app, Android-first, local-first, AI-assisted space/list manager. Tech: Flutter, SQLite, Groq API.
+ 
+ **Session summary**
+ 
+ **Duplicate prevention (done)**
+ - TDD: wrote failing tests at both `FakeSpaceRepository` and `SpaceRepository` (SQLite) levels
+ - Fixed silent drop on duplicate name in both
+ - Fixed test isolation (unique in-memory DB per test via counter)
+ - TODO comment left: merge contents on duplicate instead of dropping
+ 
+ **MockLlmClient fix (done)**
+ - Was returning fixed response ignoring input
+ - Now echoes input as location name when no `fixedResponse` provided
+ - Returns JSON array (aligned with `parseMany`)
+ 
+ **`parseMany()` introduced (done)**
+ - `SpaceParser.parse()` removed entirely — `parseMany()` is now the single entry point
+ - Returns `List<StorageLocation>` from a JSON array response
+ - Handles both single object and array responses defensively
+ - `StorageLocation` dimensions made nullable (Groq returns null when unknown)
+ - UI (`_onSubmit`) wired to `parseMany()`
+ 
+ **GroqLlmClient (done)**
+ - Implemented using `http` package against Groq OpenAI-compatible API
+ - Model: `llama-3.1-8b-instant`
+ - API key via `UNBURDEN_GROQ_API_KEY` environment variable
+ - Live tests confirm correct semantic parsing of long descriptions
+ 
+ **Integration tests (partially done)**
+ - Linux integration tests skipped via `if (Platform.isLinux) return`
+ - Unique DB path per test via `app.main(dbPath: ...)`
+ - Groq semantic test written and failing correctly — waiting for Groq to be wired in `main.dart`
+ - Emulator setup attempted but parked — use real device before push
+ 
+ **Next step**
+ - Wire `GroqLlmClient` in `main.dart` (replace `MockLlmClient`)
+ - Run integration tests on device → should go green
+ - Then: voice input or natural language command handling
+ 
+ **Test commands**
+ - Fast (during dev): `flutter test`
+ - Full (before push): `flutter test integration_test` on device

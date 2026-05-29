@@ -1,27 +1,34 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:path/path.dart';
-import 'package:unburden_app/core/mock_llm_client.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:unburden_app/core/groq_llm_client.dart';
+import 'package:unburden_app/core/llm_client.dart';
+import 'package:unburden_app/features/chat/presentation/chat_screen.dart';
 import 'package:unburden_app/features/space_manager/data/space_repository.dart';
-import 'package:unburden_app/features/space_manager/presentation/space_input_screen.dart';
 
-void main() async {
+void main({String? dbPath, LlmClient? llmClient}) async {
+  // uncomment for verbose logging
+  //AppLogger.enabled = kDebugMode;
+
   WidgetsFlutterBinding.ensureInitialized();
-  final dbPath = join(await getDatabasesPath(), 'unburden.db');
+  final path = dbPath ?? join(await getDatabasesPath(), 'unburden.db');
 
-  runApp(MaterialApp(
-    home: SpaceInputScreen(
-      llm: MockLlmClient(fixedResponse: '''
-{
-  "name": "mocked location",
-  "width_cm": 80.0,
-  "depth_cm": 40.0,
-  "height_cm": 30.0,
-  "contents": ["item one", "item two"],
-  "access_note": "easy to reach"
-}
-'''),
-      repository: SpaceRepository(dbPath: dbPath),
+  final LlmClient resolvedLlm;
+  if (llmClient != null) {
+    resolvedLlm = llmClient;
+  } else {
+    await dotenv.load(fileName: ".env");
+    final apiKey = dotenv.env['UNBURDEN_GROQ_API_KEY'] ?? '';
+    resolvedLlm = GroqLlmClient(apiKey: apiKey);
+  }
+
+  runApp(
+    MaterialApp(
+      home: ChatScreen(
+        llm: resolvedLlm,
+        repository: SpaceRepository(dbPath: path),
+      ),
     ),
-  ));
+  );
 }

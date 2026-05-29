@@ -34,7 +34,14 @@ class SpaceRepository implements SpaceRepositoryInterface {
 
   @override
   Future<void> add(StorageLocation location) async {
-    await init(); // guard
+    await init();
+    final existing = await _db!.query(
+      'storage_locations',
+      where: 'name = ?',
+      whereArgs: [location.name],
+    );
+    if (existing.isNotEmpty) return;
+    // TODO: merge contents on duplicate instead of silently dropping
     await _db!.insert('storage_locations', {
       'name': location.name,
       'width_cm': location.widthCm,
@@ -49,13 +56,17 @@ class SpaceRepository implements SpaceRepositoryInterface {
   Future<List<StorageLocation>> getAll() async {
     await init(); // guard
     final rows = await _db!.query('storage_locations');
-    return rows.map((row) => StorageLocation(
-      name: row['name'] as String,
-      widthCm: (row['width_cm'] as num).toDouble(),
-      depthCm: (row['depth_cm'] as num).toDouble(),
-      heightCm: (row['height_cm'] as num).toDouble(),
-      contents: List<String>.from(jsonDecode(row['contents'] as String)),
-      accessNote: row['access_note'] as String,
-    )).toList();
+    return rows
+        .map(
+          (row) => StorageLocation(
+            name: row['name'] as String,
+            widthCm: (row['width_cm'] as num).toDouble(),
+            depthCm: (row['depth_cm'] as num).toDouble(),
+            heightCm: (row['height_cm'] as num).toDouble(),
+            contents: List<String>.from(jsonDecode(row['contents'] as String)),
+            accessNote: row['access_note'] as String,
+          ),
+        )
+        .toList();
   }
 }

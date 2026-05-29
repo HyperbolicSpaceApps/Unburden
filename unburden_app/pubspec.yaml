@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   sqflite: ^2.3.3
   path: ^1.9.0
+  http: ^1.6.0
+  flutter_dotenv: ^6.0.1
 
 dev_dependencies:
   flutter_test:
@@ -18,13 +20,11 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   sqflite_common_ffi: ^2.3.4   # lets tests run on desktop/CI without a phone
-
   flutter_lints: ^6.0.0
 
 flutter:
 
   uses-material-design: true
-
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - .env
+  
