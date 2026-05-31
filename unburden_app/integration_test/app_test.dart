@@ -55,8 +55,7 @@ void main() {
       "contents": ["tools"],
       "access_note": ""
     }
-  ],
-  "message": "Got it, I've saved your hallway shelf with tools."
+  ]
 }
 ''';
 
@@ -73,6 +72,25 @@ void main() {
     await tester.tap(find.byIcon(Icons.send));
     await tester.pumpAndSettle();
 
-    expect(find.text("Got it, I've saved your hallway shelf with tools."), findsOneWidget);
+    expect(find.textContaining('hallway shelf'), findsOneWidget);
+  });
+
+  testWidgets('chat scrolls to show latest message', (tester) async {
+    app.main(
+      dbPath: 'test_${DateTime.now().millisecondsSinceEpoch}.db',
+      llmClient: MockLlmClient(),
+    );
+    await tester.pumpAndSettle();
+
+    for (int i = 0; i < 10; i++) {
+      await tester.tap(find.byType(TextField));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'message $i');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.send));
+      await tester.pumpAndSettle();
+    }
+
+    expect(find.textContaining('Saved: message 9', skipOffstage: false), findsOneWidget);
   });
 }

@@ -60,7 +60,7 @@ The system should combine:
 The project is intentionally designed around:
 
 * local storage,
-* user pick preferred models/set API keys,
+* user-configurable models and API keys,
 * minimal infrastructure.
 
 Personal data should remain on-device whenever possible.
@@ -73,7 +73,7 @@ Different models can be selected depending on:
 
 Examples:
 
-* local model or Lumo for sensitive information,
+* local model for sensitive information,
 * stronger hosted model for planning or reasoning tasks.
 
 ---
@@ -100,7 +100,7 @@ Track recurring mental load:
 * cleaning,
 * small unresolved tasks.
 
-The system can suggest practical improvements to maintain functional environment:
+The system can suggest practical improvements to maintain a functional environment:
 
 * extra laundry baskets if clothes are piling up everywhere,
 * better storage organization,
@@ -141,12 +141,12 @@ A practical inventory of:
 * object placement,
 * accessibility.
 
-Use case:
+Use cases:
 * move low-frequency items higher or farther away (less premium location),
 * optimize frequently used zones,
-* remember where rarely-used items are stored
+* remember where rarely-used items are stored.
 
-This may become the first MVP.
+This is the first MVP feature, currently in active development.
 
 ---
 
@@ -174,33 +174,27 @@ The user remains in control.
 * Dart
 * Flutter (Android-first)
 
-## AI / Backend logic
+## AI
 
-* Python
-* LangChain
+* Groq API (OpenAI-compatible, `llama-3.1-8b-instant`)
+* LlmClient abstraction — swap-ready for any provider
 
 ## Storage
 
-* SharedPreferences
-* local SQLite / miniSQL
-
-## Infrastructure
-
-* local-first
-* no mandatory cloud backend
-* Supabase should not be needed
+* SQLite (via sqflite)
+* Local-first, no cloud backend required
 
 ---
 
 # Development Style
 
-The project experiments with AI-assisted TDD.
+The project is built with AI-assisted TDD.
 
 Workflow:
 
 1. write failing test (red),
 2. implement minimal fix (green),
-3. refactor/improve (blue),
+3. refactor (blue),
 4. iterate.
 
 The objective is to keep the architecture simple, modular, and testable.
@@ -209,6 +203,5 @@ The objective is to keep the architecture simple, modular, and testable.
 
 # Status
 
-Early exploration / personal tool based on my own usage. 
-
+Active development. Space management is the first MVP use case.
 The primary goal is solving real everyday friction, for me first.

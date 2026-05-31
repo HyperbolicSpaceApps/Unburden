@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:unburden_app/core/llm_client.dart';
+import 'package:unburden_app/features/chat/domain/chat_prompt_builder.dart';
+import 'package:unburden_app/features/chat/domain/confirmation_builder.dart';
 import 'package:unburden_app/features/space_manager/data/space_repository_interface.dart';
 import 'package:unburden_app/features/space_manager/domain/storage_location.dart';
 
@@ -17,6 +19,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _controller = TextEditingController();
+  final _scrollController = ScrollController();
   final List<_Message> _messages = [];
   bool _loading = false;
 
@@ -31,49 +34,16 @@ class _ChatScreenState extends State<ChatScreen> {
     _controller.clear();
 
     final locations = await widget.repository.getAll();
-    final context = locations.isEmpty
-        ? 'No locations saved yet.'
-        : locations.map((l) => '- ${l.name}: ${l.contents.join(', ')}').join('\n');
-
-    final prompt =
-        '''
-You are a home space assistant. You help the user manage and optimize their storage spaces.
-
-Current stored locations:
-$context
-
-User message: "$input"
-
-Respond ONLY with a valid JSON object, no other text:
-
-If the user is describing storage locations to save:
-{
-  "action": "save_locations",
-  "locations": [
-    {
-      "name": "short location name",
-      "width_cm": 0.0,
-      "depth_cm": 0.0,
-      "height_cm": 0.0,
-      "contents": ["item1", "item2"],
-      "access_note": "how hard to reach"
-    }
-  ],
-  "message": "your natural confirmation message"
-}
-
-If the user is asking a question or having a conversation:
-{
-  "action": "answer",
-  "message": "your natural response"
-}
-''';
+    final prompt = buildChatPrompt(
+      userInput: input,
+      storedLocationSummaries: locations.map((l) => '${l.name}: ${l.contents.join(', ')}').toList(),
+    );
 
     final raw = await widget.llm.complete(prompt);
 
     final decoded = jsonDecode(raw) as Map<String, dynamic>;
     final action = decoded['action'] as String;
-    final message = decoded['message'] as String;
+    String message;
 
     if (action == 'save_locations') {
       final rawLocations = decoded['locations'] as List<dynamic>;
@@ -89,12 +59,27 @@ If the user is asking a question or having a conversation:
         );
         await widget.repository.add(location);
       }
+      message = buildConfirmationMessage(
+        rawLocations.map((item) => (item as Map<String, dynamic>)['name'] as String).toList(),
+      );
+    } else {
+      message = decoded['message'] as String;
     }
 
     if (!mounted) return;
     setState(() {
       _messages.add(_Message(text: message, isUser: false));
       _loading = false;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
     });
   }
 
@@ -106,6 +91,7 @@ If the user is asking a question or having a conversation:
           children: [
             Expanded(
               child: ListView.builder(
+                controller: _scrollController,
                 padding: const EdgeInsets.all(16),
                 itemCount: _messages.length,
                 itemBuilder: (context, index) {
@@ -119,7 +105,7 @@ If the user is asking a question or having a conversation:
                         color: msg.isUser ? Colors.blue[100] : Colors.grey[200],
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Text(msg.text),
+                      child: msg.isUser ? Text(msg.text) : SelectableText(msg.text),
                     ),
                   );
                 },
@@ -138,6 +124,12 @@ If the user is asking a question or having a conversation:
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 }
 
