@@ -1,7 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:unburden_app/core/groq_llm_client.dart';
 import 'package:unburden_app/core/llm_client.dart';
 import 'package:unburden_app/features/chat/presentation/chat_screen.dart';
@@ -12,6 +14,12 @@ void main({String? dbPath, LlmClient? llmClient}) async {
   //AppLogger.enabled = kDebugMode;
 
   WidgetsFlutterBinding.ensureInitialized();
+
+  if (Platform.isLinux) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
+
   final path = dbPath ?? join(await getDatabasesPath(), 'unburden.db');
 
   final LlmClient resolvedLlm;

@@ -40,8 +40,25 @@ class _ChatScreenState extends State<ChatScreen> {
     );
 
     final raw = await widget.llm.complete(prompt);
+    final cleaned = raw
+        .replaceAll(RegExp(r'```json\s*'), '')
+        .replaceAll(RegExp(r'```\s*'), '')
+        .trim();
 
-    final decoded = jsonDecode(raw) as Map<String, dynamic>;
+    final Map<String, dynamic> decoded;
+    try {
+      decoded = jsonDecode(cleaned) as Map<String, dynamic>;
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _messages.add(
+          _Message(text: "Sorry, I couldn't understand. Please try again.", isUser: false),
+        );
+        _loading = false;
+      });
+      return;
+    }
+
     final action = decoded['action'] as String;
     String message;
 

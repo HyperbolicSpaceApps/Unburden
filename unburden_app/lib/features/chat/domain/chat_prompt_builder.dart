@@ -1,7 +1,4 @@
-String buildChatPrompt({
-  required String userInput,
-  required List<String> storedLocationSummaries,
-}) {
+String buildChatPrompt({required String userInput, required List<String> storedLocationSummaries}) {
   final context = storedLocationSummaries.isEmpty
       ? 'No locations saved yet.'
       : storedLocationSummaries.map((s) => '- $s').join('\n');
@@ -14,7 +11,7 @@ $context
 
 User message: "$userInput"
 
-Respond ONLY with a valid JSON object, no other text:
+You MUST respond ONLY with a valid JSON object. No prose, no markdown, no explanation outside the JSON.
 
 If the user is describing storage locations to save, save each distinct physical zone (shelf level, drawer, box, surface) as a separate location:
 {

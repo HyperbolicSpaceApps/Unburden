@@ -13,13 +13,13 @@ dependencies:
   path: ^1.9.0
   http: ^1.6.0
   flutter_dotenv: ^6.0.1
+  sqflite_common_ffi: ^2.4.0+3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   integration_test:
     sdk: flutter
-  sqflite_common_ffi: ^2.3.4   # lets tests run on desktop/CI without a phone
   flutter_lints: ^6.0.0
 
 flutter:

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -11,7 +10,7 @@ void main() {
 
   group('LLM behaviour tests', () {
     test('splits a shelf with multiple levels into separate locations', () async {
-      final apiKey = Platform.environment['UNBURDEN_GROQ_API_KEY'] ?? '';
+      const apiKey = String.fromEnvironment('UNBURDEN_GROQ_API_KEY');
       if (apiKey.isEmpty) {
         markTestSkipped('UNBURDEN_GROQ_API_KEY not set');
         return;
@@ -46,7 +45,7 @@ Respond with only a JSON object: {"split_correctly": true} or {"split_correctly"
     });
 
     test('acknowledges when a location is not found without inventing an answer', () async {
-      final apiKey = Platform.environment['UNBURDEN_GROQ_API_KEY'] ?? '';
+      const apiKey = String.fromEnvironment('UNBURDEN_GROQ_API_KEY');
       if (apiKey.isEmpty) {
         markTestSkipped('UNBURDEN_GROQ_API_KEY not set');
         return;
