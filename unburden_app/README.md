@@ -138,9 +138,24 @@ flutter test integration_test/llm_behavior_test.dart
 
 ---
 
-## Next session start point
+### Session 4 — multi-tool architecture + TDD discipline
 
-* All 21 unit tests green, 4 integration tests green
-* Run app on physical Android device
-* Note friction points → drive next failing test from real usage
-* Known candidates: grocery list use case, voice input, model selection
+* Shelved space manager as primary use case — LLM too unreliable for complex optimization
+* Defined new vision: agent routes input to specialized tools, each tool is a focused list manager
+* Added `Tool` enum and `routeInput()` in `agent_router.dart` — keyword-based for now, LLM-backed later
+* Added `GroceryItem` model, `GroceryRepositoryInterface`, `FakeGroceryRepository`, `GroceryRepository`
+* Added `ThoughtEntry` model, `ThoughtRepositoryInterface`, `FakeThoughtRepository`, `ThoughtRepository`
+* Introduced `AppDatabase` — one SQLite database, one table per tool (was: one db per repository)
+* `buildChatPrompt` extended to agent-level prompt: knows all three tools, injects each tool's stored context
+* `MockLlmClient` default fixed: returns neutral `action: answer` instead of `save_locations`
+* `ChatScreen` wired to all three repositories, handles `save_locations`, `add_items`, `add_thought`
+* Welcome message on load: "welcome to Unburden. what's up?"
+* All 34 unit tests green
+
+**How we work:**
+* Never assume file contents — always ask before writing code that touches existing files
+* Tests fail for the right reason: missing production code, not missing test infrastructure
+* Keyword-based stubs are acceptable placeholders — mark with TODO explaining what replaces them and when
+* Confirmation messages are built deterministically by the app, never by the LLM
+* One failing test at a time: write it, confirm it fails, implement minimum to pass, move on
+* Real device session drives the next failing test — friction first, architecture second

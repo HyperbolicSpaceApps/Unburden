@@ -1,48 +1,29 @@
 import 'dart:convert';
 
-import 'package:sqflite/sqflite.dart';
+import 'package:unburden_app/core/app_database.dart';
 import 'package:unburden_app/features/space_manager/data/space_repository_interface.dart';
 import 'package:unburden_app/features/space_manager/domain/storage_location.dart';
 
 class SpaceRepository implements SpaceRepositoryInterface {
-  final String dbPath;
-  Database? _db;
+  final AppDatabase database;
 
-  SpaceRepository({required this.dbPath});
+  SpaceRepository({required this.database});
 
   @override
   Future<void> init() async {
-    if (_db != null) return; // already initialised, do nothing
-    _db = await openDatabase(
-      dbPath,
-      version: 1,
-      onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE storage_locations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            width_cm REAL,
-            depth_cm REAL,
-            height_cm REAL,
-            contents TEXT,
-            access_note TEXT
-          )
-        ''');
-      },
-    );
+    await database.db;
   }
 
   @override
   Future<void> add(StorageLocation location) async {
-    await init();
-    final existing = await _db!.query(
+    final db = await database.db;
+    final existing = await db.query(
       'storage_locations',
       where: 'name = ?',
       whereArgs: [location.name],
     );
     if (existing.isNotEmpty) return;
-    // TODO: merge contents on duplicate instead of silently dropping
-    await _db!.insert('storage_locations', {
+    await db.insert('storage_locations', {
       'name': location.name,
       'width_cm': location.widthCm,
       'depth_cm': location.depthCm,
@@ -54,15 +35,15 @@ class SpaceRepository implements SpaceRepositoryInterface {
 
   @override
   Future<List<StorageLocation>> getAll() async {
-    await init(); // guard
-    final rows = await _db!.query('storage_locations');
+    final db = await database.db;
+    final rows = await db.query('storage_locations');
     return rows
         .map(
           (row) => StorageLocation(
             name: row['name'] as String,
-            widthCm: (row['width_cm'] as num).toDouble(),
-            depthCm: (row['depth_cm'] as num).toDouble(),
-            heightCm: (row['height_cm'] as num).toDouble(),
+            widthCm: (row['width_cm'] as num?)?.toDouble(),
+            depthCm: (row['depth_cm'] as num?)?.toDouble(),
+            heightCm: (row['height_cm'] as num?)?.toDouble(),
             contents: List<String>.from(jsonDecode(row['contents'] as String)),
             accessNote: row['access_note'] as String,
           ),

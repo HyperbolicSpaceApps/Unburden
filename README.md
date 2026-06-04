@@ -2,6 +2,41 @@
 Context-aware lists designed to reduce mental load.
 
 ---
+## Adding a new tool
+
+1. **Domain model** — `lib/features/<tool>/domain/<model>.dart`
+   Define the data class for this tool's entries.
+
+2. **Repository interface** — `lib/features/<tool>/data/<tool>_repository_interface.dart`
+   Declare `add()` and `getAll()` against your model.
+
+3. **Fake repository** — `lib/features/<tool>/data/fake_<tool>_repository.dart`
+   In-memory implementation of the interface. Used in tests.
+
+4. **Real repository** — `lib/features/<tool>/data/<tool>_repository.dart`
+   SQLite implementation. Takes `AppDatabase`, queries its own table.
+
+5. **Database table** — `lib/core/app_database.dart`
+   Add a `CREATE TABLE` statement in `onCreate`.
+
+6. **Agent routing** — `lib/features/agent/agent_router.dart`
+   Add the new `Tool` enum value and keywords.
+
+7. **Action handler** — `lib/features/chat/presentation/chat_screen.dart`
+   Add the new `action` branch in `_onSend()`, the repository param in the
+   constructor, and update all existing `ChatScreen(...)` calls in
+   `test/features/chat/presentation/chat_screen_test.dart` to pass the new
+   fake repository.
+
+8. **Wiring** — `lib/main.dart`
+   Instantiate the real repository and pass it to `ChatScreen`.
+
+9. **Tests**
+   - Repository test: add/getAll via fake, duplicate behaviour
+   - Agent routing test: keywords route to the new tool
+   - Widget test: action handled, item stored, confirmation shown
+
+---
 
 ## Vision
 
@@ -205,3 +240,5 @@ The objective is to keep the architecture simple, modular, and testable.
 
 Active development. Space management is the first MVP use case.
 The primary goal is solving real everyday friction, for me first.
+
+

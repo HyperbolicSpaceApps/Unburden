@@ -9,41 +9,6 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('LLM behaviour tests', () {
-    test('splits a shelf with multiple levels into separate locations', () async {
-      const apiKey = String.fromEnvironment('UNBURDEN_GROQ_API_KEY');
-      if (apiKey.isEmpty) {
-        markTestSkipped('UNBURDEN_GROQ_API_KEY not set');
-        return;
-      }
-
-      final llm = GroqLlmClient(apiKey: apiKey);
-      final prompt = buildChatPrompt(
-        userInput: 'Billy shelf: top level has board games, middle has books, bottom has cables',
-        storedLocationSummaries: [],
-      );
-
-      final raw = await llm.complete(prompt);
-      final decoded = jsonDecode(raw) as Map<String, dynamic>;
-      final locations = jsonEncode(decoded['locations']);
-
-      // LLM judge
-      final judgePrompt =
-          '''
-A home storage assistant was asked to save this description:
-"Billy shelf: top level has board games, middle has books, bottom has cables"
-
-It produced these locations: $locations
-
-Did it save each physical level as a separate location, resulting in at least 3 distinct locations?
-Respond with only a JSON object: {"split_correctly": true} or {"split_correctly": false}
-''';
-
-      final judgeRaw = await llm.complete(judgePrompt);
-      final judgeResult = jsonDecode(judgeRaw) as Map<String, dynamic>;
-
-      expect(judgeResult['split_correctly'], isTrue);
-    });
-
     test('acknowledges when a location is not found without inventing an answer', () async {
       const apiKey = String.fromEnvironment('UNBURDEN_GROQ_API_KEY');
       if (apiKey.isEmpty) {
@@ -55,6 +20,7 @@ Respond with only a JSON object: {"split_correctly": true} or {"split_correctly"
       final prompt = buildChatPrompt(
         userInput: 'where are my comic books?',
         storedLocationSummaries: ['hallway shelf: tools, umbrella'],
+        storedGroceryItems: [],
       );
 
       final raw = await llm.complete(prompt);
@@ -76,6 +42,111 @@ Respond with only a JSON object: {"invented": true} or {"invented": false}
       final judgeResult = jsonDecode(judgeRaw) as Map<String, dynamic>;
 
       expect(judgeResult['invented'], isFalse);
+    });
+
+    test('shows current grocery list when user says "grocery"', () async {
+      const apiKey = String.fromEnvironment('UNBURDEN_GROQ_API_KEY');
+      if (apiKey.isEmpty) {
+        markTestSkipped('UNBURDEN_GROQ_API_KEY not set');
+        return;
+      }
+
+      final llm = GroqLlmClient(apiKey: apiKey);
+      final prompt = buildChatPrompt(
+        userInput: 'grocery',
+        storedLocationSummaries: [],
+        storedGroceryItems: ['milk', 'potatoes'],
+      );
+
+      final raw = await llm.complete(prompt);
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      final message = decoded['message']?.toString() ?? '';
+
+      final judgePrompt =
+          '''
+A personal assistant received the message: "grocery"
+The current grocery list contains: milk, potatoes.
+The assistant responded with: "$message"
+
+Did the assistant show or mention the current grocery list (milk and/or potatoes)?
+Respond with only a JSON object: {"showed_list": true} or {"showed_list": false}
+''';
+
+      final judgeRaw = await llm.complete(judgePrompt);
+      final judgeResult = jsonDecode(judgeRaw) as Map<String, dynamic>;
+
+      expect(judgeResult['showed_list'], isTrue);
+    });
+
+    test('returns clarifying response for gibberish input', () async {
+      const apiKey = String.fromEnvironment('UNBURDEN_GROQ_API_KEY');
+      if (apiKey.isEmpty) {
+        markTestSkipped('UNBURDEN_GROQ_API_KEY not set');
+        return;
+      }
+
+      final llm = GroqLlmClient(apiKey: apiKey);
+      final prompt = buildChatPrompt(
+        userInput: 'xzqwpfj',
+        storedLocationSummaries: [],
+        storedGroceryItems: [],
+      );
+
+      final raw = await llm.complete(prompt);
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      final message = decoded['message']?.toString() ?? '';
+
+      final judgePrompt =
+          '''
+A personal assistant received a gibberish message it could not understand: "xzqwpfj"
+The assistant responded with: "$message"
+
+Did the assistant indicate it did not understand, or ask for clarification, rather than acting as if it understood?
+Respond with only a JSON object: {"clarified": true} or {"clarified": false}
+''';
+
+      final judgeRaw = await llm.complete(judgePrompt);
+      final judgeResult = jsonDecode(judgeRaw) as Map<String, dynamic>;
+
+      expect(judgeResult['clarified'], isTrue);
+    });
+
+    test('respects tool rule: show grocery list when user says "grocery"', () async {
+      const apiKey = String.fromEnvironment('UNBURDEN_GROQ_API_KEY');
+      if (apiKey.isEmpty) {
+        markTestSkipped('UNBURDEN_GROQ_API_KEY not set');
+        return;
+      }
+
+      final llm = GroqLlmClient(apiKey: apiKey);
+      final prompt = buildChatPrompt(
+        userInput: 'grocery',
+        storedLocationSummaries: [],
+        storedGroceryItems: ['milk', 'potatoes'],
+        toolRules: {
+          'grocery': ['when I say "grocery", always show my current list'],
+        },
+      );
+
+      final raw = await llm.complete(prompt);
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      final message = decoded['message']?.toString() ?? '';
+
+      final judgePrompt =
+          '''
+A personal assistant received the message: "grocery"
+It had a user-defined rule: "when I say grocery, always show my current list"
+The current grocery list contains: milk, potatoes.
+The assistant responded with: "$message"
+
+Did the assistant show the current grocery list (mentioning milk and/or potatoes)?
+Respond with only a JSON object: {"showed_list": true} or {"showed_list": false}
+''';
+
+      final judgeRaw = await llm.complete(judgePrompt);
+      final judgeResult = jsonDecode(judgeRaw) as Map<String, dynamic>;
+
+      expect(judgeResult['showed_list'], isTrue);
     });
   });
 }

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 /// Simple logger. Set [AppLogger.enabled] to true during development.
 class AppLogger {

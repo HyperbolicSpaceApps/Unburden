@@ -15,25 +15,10 @@ class MockLlmClient implements LlmClient {
       return fixedResponse!;
     }
 
-    // Extract the user input from the prompt to use as name
-    final match = RegExp(r'"([^"]+)"').firstMatch(prompt);
-    final name = match?.group(1) ?? 'unknown location';
-
-    final response =
-        '''
+    final response = '''
 {
-  "action": "save_locations",
-  "locations": [
-    {
-      "name": "$name",
-      "width_cm": 0.0,
-      "depth_cm": 0.0,
-      "height_cm": 0.0,
-      "contents": [],
-      "access_note": ""
-    }
-  ],
-  "message": "Got it, I've saved $name."
+  "action": "answer",
+  "message": "I'm not sure how to help with that yet."
 }
 ''';
     AppLogger.mock('returning response: $response');

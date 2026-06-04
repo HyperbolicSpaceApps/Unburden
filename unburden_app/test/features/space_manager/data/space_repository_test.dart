@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:unburden_app/core/app_database.dart';
 import 'package:unburden_app/features/space_manager/data/fake_space_repository.dart';
 import 'package:unburden_app/features/space_manager/data/space_repository.dart';
 import 'package:unburden_app/features/space_manager/domain/storage_location.dart';
@@ -15,7 +16,8 @@ void main() {
     int dbCounter = 0;
 
     setUp(() async {
-      repo = SpaceRepository(dbPath: 'file:test_${dbCounter++}?mode=memory&cache=shared');
+      final db = AppDatabase(dbPath: 'file:test_${dbCounter++}?mode=memory&cache=shared');
+      repo = SpaceRepository(database: db);
       await repo.init();
     });
 
@@ -71,7 +73,7 @@ void main() {
       await repo.add(location);
 
       final all = await repo.getAll();
-      expect(all.length, 1); // TODO: merge contents on duplicate instead of silently dropping
+      expect(all.length, 1);
     });
   });
 }

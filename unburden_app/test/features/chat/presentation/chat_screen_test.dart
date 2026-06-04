@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:unburden_app/core/mock_llm_client.dart';
+import 'package:unburden_app/core/throwing_llm_client.dart';
 import 'package:unburden_app/features/chat/presentation/chat_screen.dart';
+import 'package:unburden_app/features/grocery/data/fake_grocery_repository.dart';
 import 'package:unburden_app/features/space_manager/data/fake_space_repository.dart';
+import 'package:unburden_app/features/thoughts/data/fake_thought_repository.dart';
 
 void main() {
   group('ChatScreen', () {
     testWidgets('shows a text input and send button', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: ChatScreen(llm: MockLlmClient(), repository: FakeSpaceRepository()),
+          home: ChatScreen(
+            llm: MockLlmClient(),
+            spaceRepository: FakeSpaceRepository(),
+            groceryRepository: FakeGroceryRepository(),
+            thoughtRepository: FakeThoughtRepository(),
+          ),
         ),
       );
 
@@ -20,7 +28,12 @@ void main() {
     testWidgets('user message appears in chat after sending', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: ChatScreen(llm: MockLlmClient(), repository: FakeSpaceRepository()),
+          home: ChatScreen(
+            llm: MockLlmClient(),
+            spaceRepository: FakeSpaceRepository(),
+            groceryRepository: FakeGroceryRepository(),
+            thoughtRepository: FakeThoughtRepository(),
+          ),
         ),
       );
 
@@ -56,7 +69,9 @@ void main() {
           MaterialApp(
             home: ChatScreen(
               llm: MockLlmClient(fixedResponse: mockResponse),
-              repository: repository,
+              spaceRepository: repository,
+              groceryRepository: FakeGroceryRepository(),
+              thoughtRepository: FakeThoughtRepository(),
             ),
           ),
         );
@@ -95,7 +110,9 @@ void main() {
         MaterialApp(
           home: ChatScreen(
             llm: MockLlmClient(fixedResponse: mockResponse),
-            repository: repository,
+            spaceRepository: repository,
+            groceryRepository: FakeGroceryRepository(),
+            thoughtRepository: FakeThoughtRepository(),
           ),
         ),
       );
@@ -151,7 +168,9 @@ void main() {
         MaterialApp(
           home: ChatScreen(
             llm: MockLlmClient(fixedResponse: mockResponse),
-            repository: repository,
+            spaceRepository: repository,
+            groceryRepository: FakeGroceryRepository(),
+            thoughtRepository: FakeThoughtRepository(),
           ),
         ),
       );
@@ -197,7 +216,9 @@ void main() {
         MaterialApp(
           home: ChatScreen(
             llm: MockLlmClient(fixedResponse: mockResponse),
-            repository: FakeSpaceRepository(),
+            spaceRepository: FakeSpaceRepository(),
+            groceryRepository: FakeGroceryRepository(),
+            thoughtRepository: FakeThoughtRepository(),
           ),
         ),
       );
@@ -211,11 +232,14 @@ void main() {
     });
 
     testWidgets('chat scrolls to latest message after sending', (tester) async {
-      final repository = FakeSpaceRepository();
-
       await tester.pumpWidget(
         MaterialApp(
-          home: ChatScreen(llm: MockLlmClient(), repository: repository),
+          home: ChatScreen(
+            llm: MockLlmClient(),
+            spaceRepository: FakeSpaceRepository(),
+            groceryRepository: FakeGroceryRepository(),
+            thoughtRepository: FakeThoughtRepository(),
+          ),
         ),
       );
 
@@ -225,13 +249,19 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      expect(find.textContaining('Saved: message 9'), findsOneWidget);
+      // last user message is visible after scroll
+      expect(find.text('message 9'), findsOneWidget);
     });
 
     testWidgets('LLM response is selectable text', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: ChatScreen(llm: MockLlmClient(), repository: FakeSpaceRepository()),
+          home: ChatScreen(
+            llm: MockLlmClient(),
+            spaceRepository: FakeSpaceRepository(),
+            groceryRepository: FakeGroceryRepository(),
+            thoughtRepository: FakeThoughtRepository(),
+          ),
         ),
       );
 
@@ -241,5 +271,105 @@ void main() {
 
       expect(find.byType(SelectableText), findsAtLeastNWidgets(1));
     });
+
+    testWidgets('shows welcome message on first load before any user input', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChatScreen(
+            llm: MockLlmClient(),
+            spaceRepository: FakeSpaceRepository(),
+            groceryRepository: FakeGroceryRepository(),
+            thoughtRepository: FakeThoughtRepository(),
+          ),
+        ),
+      );
+
+      expect(find.text("welcome to Unburden. what's up?"), findsOneWidget);
+    });
+
+    testWidgets('grocery input is stored and confirmation appears in chat', (tester) async {
+      const mockResponse = '''
+{
+  "action": "add_items",
+  "items": [
+    {"name": "potatoes"}
+  ]
+}
+''';
+
+      final repo = FakeGroceryRepository();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChatScreen(
+            llm: MockLlmClient(fixedResponse: mockResponse),
+            spaceRepository: FakeSpaceRepository(),
+            groceryRepository: repo,
+            thoughtRepository: FakeThoughtRepository(),
+          ),
+        ),
+      );
+
+      await tester.enterText(find.byType(TextField), 'I need potatoes');
+      await tester.tap(find.byIcon(Icons.send));
+      await tester.pumpAndSettle();
+
+      expect(find.text('potatoes added to grocery list'), findsOneWidget);
+
+      final saved = await repo.getAll();
+      expect(saved.length, equals(1));
+      expect(saved.first.name, equals('potatoes'));
+    });
+
+    testWidgets('when llm.complete() throws, error message includes the reason', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChatScreen(
+            llm: ThrowingLlmClient('401 unauthorized'),
+            spaceRepository: FakeSpaceRepository(),
+            groceryRepository: FakeGroceryRepository(),
+            thoughtRepository: FakeThoughtRepository(),
+          ),
+        ),
+      );
+
+      await tester.enterText(find.byType(TextField), 'hello');
+      await tester.tap(find.byIcon(Icons.send));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('401 unauthorized'), findsOneWidget);
+    });
+
+    testWidgets(
+      'when LLM response causes a processing error, error appears in chat and send button is re-enabled',
+      (tester) async {
+        const mockResponse = '''
+{
+  "action": "answer"
+}
+''';
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: ChatScreen(
+              llm: MockLlmClient(fixedResponse: mockResponse),
+              spaceRepository: FakeSpaceRepository(),
+              groceryRepository: FakeGroceryRepository(),
+              thoughtRepository: FakeThoughtRepository(),
+            ),
+          ),
+        );
+
+        await tester.enterText(find.byType(TextField), 'groceries');
+        await tester.tap(find.byIcon(Icons.send));
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('Error:'), findsOneWidget);
+        expect(
+          tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.send)).onPressed,
+          isNotNull,
+        );
+      },
+    );
   });
 }

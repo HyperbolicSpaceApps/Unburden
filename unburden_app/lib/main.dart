@@ -4,14 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:path/path.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:unburden_app/core/app_database.dart';
 import 'package:unburden_app/core/groq_llm_client.dart';
 import 'package:unburden_app/core/llm_client.dart';
 import 'package:unburden_app/features/chat/presentation/chat_screen.dart';
+import 'package:unburden_app/features/grocery/data/grocery_repository.dart';
 import 'package:unburden_app/features/space_manager/data/space_repository.dart';
+import 'package:unburden_app/features/thoughts/data/thought_repository.dart';
 
 void main({String? dbPath, LlmClient? llmClient}) async {
-  // uncomment for verbose logging
-  //AppLogger.enabled = kDebugMode;
+  // see app_logger to force verbose test logs
 
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -21,6 +23,7 @@ void main({String? dbPath, LlmClient? llmClient}) async {
   }
 
   final path = dbPath ?? join(await getDatabasesPath(), 'unburden.db');
+  final db = AppDatabase(dbPath: path);
 
   final LlmClient resolvedLlm;
   if (llmClient != null) {
@@ -35,7 +38,9 @@ void main({String? dbPath, LlmClient? llmClient}) async {
     MaterialApp(
       home: ChatScreen(
         llm: resolvedLlm,
-        repository: SpaceRepository(dbPath: path),
+        spaceRepository: SpaceRepository(database: db),
+        groceryRepository: GroceryRepository(database: db),
+        thoughtRepository: ThoughtRepository(database: db),
       ),
     ),
   );

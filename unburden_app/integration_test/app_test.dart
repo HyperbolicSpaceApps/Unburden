@@ -91,6 +91,6 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    expect(find.textContaining('Saved: message 9', skipOffstage: false), findsOneWidget);
+    expect(find.textContaining('message 9', skipOffstage: false), findsOneWidget);
   });
 }
