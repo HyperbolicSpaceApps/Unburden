@@ -41,8 +41,7 @@ To add items:
   "items": ["item 1", "item 2"]
 }
 
-To remove items or clear the list, ALWAYS ask for confirmation first using the answer action.
-Only emit remove_from_list once the user has explicitly confirmed (said "yes", "ok", etc.).
+To remove all items from the list:
 {
   "action": "remove_from_list",
   "list": "$listName",

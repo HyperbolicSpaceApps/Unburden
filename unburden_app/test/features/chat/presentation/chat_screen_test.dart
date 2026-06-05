@@ -252,6 +252,24 @@ void main() {
       expect(saved.first, contains('sunset'));
     });
 
+    testWidgets('clarify action displays the question in chat', (tester) async {
+      const mockResponse = '''
+{
+  "action": "clarify",
+  "message": "Did you mean to add this to your todo list or save it as a location?"
+}
+''';
+      await tester.pumpWidget(MaterialApp(home: _screen(llm: MockLlmClient(fixedResponse: mockResponse))));
+      await tester.enterText(find.byType(TextField), 'béquille peugeot');
+      await tester.tap(find.byIcon(Icons.send));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Did you mean to add this to your todo list or save it as a location?'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Error:'), findsNothing);
+    });
+
     testWidgets('remove_from_list shows confirmation and does not clear the list immediately', (
       tester,
     ) async {

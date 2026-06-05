@@ -89,9 +89,9 @@ Respond with only a JSON object: {"invented": true} or {"invented": false}
         {'role': 'user', 'content': 'xzqwpfj'},
       ]);
       final decoded = jsonDecode(raw) as Map<String, dynamic>;
-      final message = decoded['message']?.toString() ?? '';
 
-      expect(message, contains("I didn't understand"));
+      expect(decoded['action'], anyOf(equals('clarify'), equals('answer')));
+      expect(decoded['message'], isNotNull);
     });
 
     test('respects tool rule: show grocery list when user says "grocery"', () async {
@@ -205,7 +205,7 @@ Respond with only a JSON object: {"showed_list": true} or {"showed_list": false}
       expect((decoded['items'] as List).join(' ').toLowerCase(), contains('dentist'));
     });
 
-    test('remove all asks for confirmation before returning remove_from_list', () async {
+    test('returns remove_from_list for removal intent', () async {
       const apiKey = String.fromEnvironment('UNBURDEN_GROQ_API_KEY');
       if (apiKey.isEmpty) {
         markTestSkipped('UNBURDEN_GROQ_API_KEY not set');
@@ -220,22 +220,12 @@ Respond with only a JSON object: {"showed_list": true} or {"showed_list": false}
         ],
       );
 
-      // Turn 1: removal request — LLM must ask for confirmation, not remove yet
-      final raw1 = await llm.complete(systemPrompt, [
+      final raw = await llm.complete(systemPrompt, [
         {'role': 'user', 'content': 'remove all from todo'},
       ]);
-      final decoded1 = jsonDecode(raw1) as Map<String, dynamic>;
-      expect(decoded1['action'], equals('answer'));
-
-      // Turn 2: user confirms — LLM must now return remove_from_list
-      final raw2 = await llm.complete(systemPrompt, [
-        {'role': 'user', 'content': 'remove all from todo'},
-        {'role': 'assistant', 'content': decoded1['message'] as String},
-        {'role': 'user', 'content': 'yes'},
-      ]);
-      final decoded2 = jsonDecode(raw2) as Map<String, dynamic>;
-      expect(decoded2['action'], equals('remove_from_list'));
-      expect(decoded2['list'], equals('todo'));
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      expect(decoded['action'], equals('remove_from_list'));
+      expect(decoded['list'], equals('todo'));
     });
 
     test('"to do X" adds X as a single item, does not split on spaces', () async {

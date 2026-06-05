@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:unburden_app/features/chat/domain/chat_prompt_builder.dart';
 import 'package:unburden_app/features/chat/domain/grocery_prompt_builder.dart';
 import 'package:unburden_app/features/chat/domain/list_tool_prompt_builder.dart';
 import 'package:unburden_app/features/chat/domain/space_manager_prompt_builder.dart';
@@ -7,6 +8,13 @@ import 'package:unburden_app/features/chat/domain/todo_prompt_builder.dart';
 import 'package:unburden_app/features/chat/domain/where_is_it_prompt_builder.dart';
 
 void main() {
+  group('Chat Prompt', () {
+    test('lists clarify as a valid action name', () {
+      final prompt = buildChatPrompt(storedLocationSummaries: [], listToolSections: []);
+      expect(prompt, contains('"clarify"'));
+    });
+  });
+
   group('Where Is It Prompt', () {
     test('contains save_locations action', () {
       final prompt = buildWhereIsItPrompt(storedLocationSummaries: []);
@@ -33,6 +41,11 @@ void main() {
       final prompt = buildWhereIsItPrompt(storedLocationSummaries: []);
       expect(prompt, isNot(contains('add_to_list')));
       expect(prompt, isNot(contains('add_thought')));
+    });
+
+    test('explicitly excludes task-like inputs from triggering save_locations', () {
+      final prompt = buildWhereIsItPrompt(storedLocationSummaries: []);
+      expect(prompt, contains('task'));
     });
   });
 

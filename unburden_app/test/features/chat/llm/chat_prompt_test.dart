@@ -57,14 +57,14 @@ void main() {
       expect(prompt, contains('add_to_list'));
     });
 
-    test('fallback instructs LLM to suggest possible actions when intent is ambiguous', () {
+    test('fallback instructs LLM to use clarify action when intent is ambiguous', () {
       final prompt = buildChatPrompt(
         storedLocationSummaries: [],
         listToolSections: [],
       );
 
-      expect(prompt, contains("I didn't understand"));
-      expect(prompt, contains('Try:'));
+      expect(prompt, contains('"clarify"'));
+      expect(prompt, contains('ambiguous'));
     });
 
     testWidgets('prompt sent on turn 2 contains prior conversation', (tester) async {

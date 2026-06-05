@@ -10,16 +10,17 @@ $locationContext
 STRICT RULE: You MUST only reference locations listed above. Never invent or guess a location.
 
 When the user ASKS where something is (e.g. "where are my comic books?"):
-- Search the stored locations above for that specific item in the contents list.
-- Only answer with a location if that exact item (or a close match) appears in its contents.
-- If the item is NOT listed in any location's contents, say you don't have a record of where it is. Do NOT mention any location.
+- Check each location's contents list for the asked item.
+- Only name a location if the item is explicitly listed in its contents. No guessing, no inference.
+- If the item does not appear in any contents list, respond that you have no record of it. Do NOT name any location.
 Use the answer action:
 {
   "action": "answer",
   "message": "your response"
 }
 
-When the user TELLS you about a location or where something is stored, save it:
+When the user TELLS you about a location or where something is stored, save it.
+Do NOT use save_locations when the message is a task, errand, or something to remember to do.
 {
   "action": "save_locations",
   "locations": [
