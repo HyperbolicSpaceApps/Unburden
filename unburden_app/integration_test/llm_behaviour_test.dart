@@ -205,6 +205,65 @@ Respond with only a JSON object: {"showed_list": true} or {"showed_list": false}
       expect((decoded['items'] as List).join(' ').toLowerCase(), contains('dentist'));
     });
 
+    test('remove all asks for confirmation before returning remove_from_list', () async {
+      const apiKey = String.fromEnvironment('UNBURDEN_GROQ_API_KEY');
+      if (apiKey.isEmpty) {
+        markTestSkipped('UNBURDEN_GROQ_API_KEY not set');
+        return;
+      }
+
+      final llm = GroqLlmClient(apiKey: apiKey);
+      final systemPrompt = buildChatPrompt(
+        storedLocationSummaries: [],
+        listToolSections: [
+          buildListToolPrompt(listName: 'todo', storedItems: ['béquille peugeot', 'call dentist']),
+        ],
+      );
+
+      // Turn 1: removal request — LLM must ask for confirmation, not remove yet
+      final raw1 = await llm.complete(systemPrompt, [
+        {'role': 'user', 'content': 'remove all from todo'},
+      ]);
+      final decoded1 = jsonDecode(raw1) as Map<String, dynamic>;
+      expect(decoded1['action'], equals('answer'));
+
+      // Turn 2: user confirms — LLM must now return remove_from_list
+      final raw2 = await llm.complete(systemPrompt, [
+        {'role': 'user', 'content': 'remove all from todo'},
+        {'role': 'assistant', 'content': decoded1['message'] as String},
+        {'role': 'user', 'content': 'yes'},
+      ]);
+      final decoded2 = jsonDecode(raw2) as Map<String, dynamic>;
+      expect(decoded2['action'], equals('remove_from_list'));
+      expect(decoded2['list'], equals('todo'));
+    });
+
+    test('"to do X" adds X as a single item, does not split on spaces', () async {
+      const apiKey = String.fromEnvironment('UNBURDEN_GROQ_API_KEY');
+      if (apiKey.isEmpty) {
+        markTestSkipped('UNBURDEN_GROQ_API_KEY not set');
+        return;
+      }
+
+      final llm = GroqLlmClient(apiKey: apiKey);
+      final systemPrompt = buildChatPrompt(
+        storedLocationSummaries: [],
+        listToolSections: [buildListToolPrompt(listName: 'todo', storedItems: [])],
+      );
+
+      final raw = await llm.complete(systemPrompt, [
+        {'role': 'user', 'content': 'to do béquille peugeot'},
+      ]);
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+
+      expect(decoded['action'], equals('add_to_list'));
+      expect(decoded['list'], equals('todo'));
+      final items = decoded['items'] as List<dynamic>;
+      expect(items.length, equals(1));
+      expect(items[0].toString().toLowerCase(), contains('béquille'));
+      expect(items[0].toString().toLowerCase(), contains('peugeot'));
+    });
+
     test('resolves "yes" to add_to_list when prior turn asked about a grocery item', () async {
       const apiKey = String.fromEnvironment('UNBURDEN_GROQ_API_KEY');
       if (apiKey.isEmpty) {

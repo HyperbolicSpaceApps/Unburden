@@ -127,6 +127,19 @@ class _ChatScreenState extends State<ChatScreen> {
         );
         await tool.repository.addAll(items);
         result = 'added to $listName: ${items.join(', ')}';
+      } else if (action == 'remove_from_list') {
+        final listName = decoded['list'] as String;
+        final items = (decoded['items'] as List<dynamic>).cast<String>();
+        final tool = widget.listTools.firstWhere(
+          (t) => t.name == listName,
+          orElse: () => throw Exception('Unknown list: $listName'),
+        );
+        if (items.length == 1 && items.first == 'all') {
+          await tool.repository.clear();
+          result = 'cleared $listName';
+        } else {
+          result = 'remove of specific items not yet supported';
+        }
       } else {
         result = decoded['message'] as String;
       }

@@ -10,4 +10,7 @@ class FakeListRepository implements ListRepositoryInterface {
 
   @override
   Future<List<String>> getAll() async => List.from(_store);
+
+  @override
+  Future<void> clear() async => _store.clear();
 }

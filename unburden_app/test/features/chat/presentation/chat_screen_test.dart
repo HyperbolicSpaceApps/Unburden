@@ -252,6 +252,35 @@ void main() {
       expect(saved.first, contains('sunset'));
     });
 
+    testWidgets('remove_from_list with items ["all"] clears the list and shows confirmation', (
+      tester,
+    ) async {
+      const mockResponse = '''
+{
+  "action": "remove_from_list",
+  "list": "todo",
+  "items": ["all"]
+}
+''';
+      final repo = FakeListRepository();
+      await repo.addAll(['béquille peugeot', 'call dentist']);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChatScreen(
+            llm: MockLlmClient(fixedResponse: mockResponse),
+            whereIsItRepository: FakeWhereIsItRepository(),
+            listTools: [ListTool(name: 'todo', repository: repo)],
+          ),
+        ),
+      );
+      await tester.enterText(find.byType(TextField), 'yes');
+      await tester.tap(find.byIcon(Icons.send));
+      await tester.pumpAndSettle();
+
+      expect(await repo.getAll(), isEmpty);
+      expect(find.textContaining('Error:'), findsNothing);
+    });
+
     testWidgets('when llm.complete() throws, error message includes the reason', (tester) async {
       await tester.pumpWidget(
         MaterialApp(

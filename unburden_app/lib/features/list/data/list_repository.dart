@@ -17,6 +17,12 @@ class ListRepository implements ListRepositoryInterface {
   }
 
   @override
+  Future<void> clear() async {
+    final db = await database.db;
+    await db.delete('list_items', where: 'list_name = ?', whereArgs: [listName]);
+  }
+
+  @override
   Future<List<String>> getAll() async {
     final db = await database.db;
     final rows = await db.query(

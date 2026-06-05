@@ -5,12 +5,21 @@ String buildWhereIsItPrompt({required List<String> storedLocationSummaries}) {
 
   return '''
 --- TOOL: where is it ---
-Use when the user describes where something is stored, or asks where to find something.
 Current stored locations:
 $locationContext
 STRICT RULE: You MUST only reference locations listed above. Never invent or guess a location.
 
-To save locations:
+When the user ASKS where something is (e.g. "where are my comic books?"):
+- Search the stored locations above for that specific item in the contents list.
+- Only answer with a location if that exact item (or a close match) appears in its contents.
+- If the item is NOT listed in any location's contents, say you don't have a record of where it is. Do NOT mention any location.
+Use the answer action:
+{
+  "action": "answer",
+  "message": "your response"
+}
+
+When the user TELLS you about a location or where something is stored, save it:
 {
   "action": "save_locations",
   "locations": [
