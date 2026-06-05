@@ -31,6 +31,9 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<_Message> _messages = [];
   final List<Map<String, String>> _history = [];
   bool _loading = false;
+  ({String listName, List<String> items})? _pendingRemove;
+
+  static const _confirmationWords = {'yes', 'y', 'yup', 'ok', 'sure', 'oui'};
 
   @override
   void initState() {
@@ -47,6 +50,28 @@ class _ChatScreenState extends State<ChatScreen> {
       _loading = true;
     });
     _controller.clear();
+
+    if (_pendingRemove != null) {
+      final pending = _pendingRemove!;
+      _pendingRemove = null;
+      if (_confirmationWords.contains(input.toLowerCase().trim())) {
+        final tool = widget.listTools.firstWhere((t) => t.name == pending.listName);
+        await tool.repository.clear();
+        if (!mounted) return;
+        setState(() {
+          _messages.add(_Message(text: 'cleared ${pending.listName}', isUser: false));
+          _loading = false;
+        });
+        return;
+      } else {
+        if (!mounted) return;
+        setState(() {
+          _messages.add(_Message(text: 'removal cancelled', isUser: false));
+          _loading = false;
+        });
+        return;
+      }
+    }
 
     final locations = await widget.whereIsItRepository.getAll();
     final listSections = <String>[];
@@ -130,16 +155,12 @@ class _ChatScreenState extends State<ChatScreen> {
       } else if (action == 'remove_from_list') {
         final listName = decoded['list'] as String;
         final items = (decoded['items'] as List<dynamic>).cast<String>();
-        final tool = widget.listTools.firstWhere(
+        widget.listTools.firstWhere(
           (t) => t.name == listName,
           orElse: () => throw Exception('Unknown list: $listName'),
         );
-        if (items.length == 1 && items.first == 'all') {
-          await tool.repository.clear();
-          result = 'cleared $listName';
-        } else {
-          result = 'remove of specific items not yet supported';
-        }
+        _pendingRemove = (listName: listName, items: items);
+        result = 'Remove all items from $listName? Reply yes to confirm.';
       } else {
         result = decoded['message'] as String;
       }

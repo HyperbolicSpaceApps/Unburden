@@ -252,7 +252,7 @@ void main() {
       expect(saved.first, contains('sunset'));
     });
 
-    testWidgets('remove_from_list with items ["all"] clears the list and shows confirmation', (
+    testWidgets('remove_from_list shows confirmation and does not clear the list immediately', (
       tester,
     ) async {
       const mockResponse = '''
@@ -273,12 +273,75 @@ void main() {
           ),
         ),
       );
-      await tester.enterText(find.byType(TextField), 'yes');
+      await tester.enterText(find.byType(TextField), 'remove all from todo');
       await tester.tap(find.byIcon(Icons.send));
       await tester.pumpAndSettle();
 
-      expect(await repo.getAll(), isEmpty);
+      expect(await repo.getAll(), hasLength(2));
       expect(find.textContaining('Error:'), findsNothing);
+    });
+
+    for (final word in ['yes', 'y', 'yup', 'ok', 'sure', 'oui']) {
+      testWidgets('remove_from_list clears the list when user replies "$word"', (tester) async {
+        const mockResponse = '''
+{
+  "action": "remove_from_list",
+  "list": "todo",
+  "items": ["all"]
+}
+''';
+        final repo = FakeListRepository();
+        await repo.addAll(['béquille peugeot', 'call dentist']);
+        await tester.pumpWidget(
+          MaterialApp(
+            home: ChatScreen(
+              llm: MockLlmClient(fixedResponse: mockResponse),
+              whereIsItRepository: FakeWhereIsItRepository(),
+              listTools: [ListTool(name: 'todo', repository: repo)],
+            ),
+          ),
+        );
+        await tester.enterText(find.byType(TextField), 'remove all from todo');
+        await tester.tap(find.byIcon(Icons.send));
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byType(TextField), word);
+        await tester.tap(find.byIcon(Icons.send));
+        await tester.pumpAndSettle();
+
+        expect(await repo.getAll(), isEmpty);
+        expect(find.textContaining('Error:'), findsNothing);
+      });
+    }
+
+    testWidgets('remove_from_list does not clear the list when user declines', (tester) async {
+      const mockResponse = '''
+{
+  "action": "remove_from_list",
+  "list": "todo",
+  "items": ["all"]
+}
+''';
+      final repo = FakeListRepository();
+      await repo.addAll(['béquille peugeot', 'call dentist']);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChatScreen(
+            llm: MockLlmClient(fixedResponse: mockResponse),
+            whereIsItRepository: FakeWhereIsItRepository(),
+            listTools: [ListTool(name: 'todo', repository: repo)],
+          ),
+        ),
+      );
+      await tester.enterText(find.byType(TextField), 'remove all from todo');
+      await tester.tap(find.byIcon(Icons.send));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'no');
+      await tester.tap(find.byIcon(Icons.send));
+      await tester.pumpAndSettle();
+
+      expect(await repo.getAll(), hasLength(2));
     });
 
     testWidgets('when llm.complete() throws, error message includes the reason', (tester) async {
