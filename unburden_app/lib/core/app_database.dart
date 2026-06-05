@@ -36,6 +36,13 @@ class AppDatabase {
             created_at INTEGER NOT NULL
           )
         ''');
+        await db.execute('''
+          CREATE TABLE todos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            text TEXT NOT NULL,
+            created_at INTEGER NOT NULL
+          )
+        ''');
       },
     );
     return _db!;

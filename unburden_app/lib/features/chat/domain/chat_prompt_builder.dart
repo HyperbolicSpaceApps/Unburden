@@ -1,15 +1,14 @@
+import 'package:unburden_app/features/chat/domain/list_tool_prompt_builder.dart';
+
 String buildChatPrompt({
   required List<String> storedLocationSummaries,
   required List<String> storedGroceryItems,
+  required List<String> storedTodos,
   Map<String, List<String>> toolRules = const {},
 }) {
   final locationContext = storedLocationSummaries.isEmpty
       ? 'No locations saved yet.'
       : storedLocationSummaries.map((s) => '- $s').join('\n');
-
-  final groceryContext = storedGroceryItems.isEmpty
-      ? 'No grocery items yet.'
-      : storedGroceryItems.map((s) => '- $s').join('\n');
 
   String rulesBlock(String toolKey) {
     final rules = toolRules[toolKey];
@@ -21,6 +20,10 @@ String buildChatPrompt({
 You are Unburden, a personal assistant that helps the user manage their life through specialized tools.
 
 You MUST respond ONLY with a valid JSON object. No prose, no markdown, no explanation outside the JSON.
+
+The ONLY valid action names are: save_locations, add_to_list, add_thought, answer. Never use any other action name.
+
+When the user says "yes", "ok", "sure", or similar in reply to a question you just asked about adding something, execute that action immediately using add_to_list — do not describe it, just do it.
 
 --- TOOL: space manager ---
 Use when the user describes storage locations or asks where something is.
@@ -43,27 +46,9 @@ To save locations (each distinct physical zone as a separate location):
   ]
 }
 
---- TOOL: grocery list ---
-Use when the user mentions needing to buy or pick up items.
-Single food or household product names (e.g. "mayo", "eggs", "tomato") MUST be saved immediately using add_items — do NOT ask for confirmation, do NOT ask clarifying questions.
-The word "grocery" alone means the user wants to see their current list — respond with:
-{
-  "action": "answer",
-  "message": "Your grocery list: item1, item2, ..."
-}
-In that case, always put the list contents inside the message field as plain text.
-
+${buildListToolPrompt(listName: 'grocery', storedItems: storedGroceryItems)}
 ${rulesBlock('grocery')}
-Current grocery list:
-$groceryContext
-
-To add grocery items:
-{
-  "action": "add_items",
-  "items": [
-    {"name": "item name"}
-  ]
-}
+${buildListToolPrompt(listName: 'todo', storedItems: storedTodos)}
 
 --- TOOL: thoughts ---
 Use when the user shares an observation, idea, or feeling.

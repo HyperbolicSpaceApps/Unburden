@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:unburden_app/features/chat/domain/grocery_prompt_builder.dart';
+import 'package:unburden_app/features/chat/domain/list_tool_prompt_builder.dart';
 import 'package:unburden_app/features/chat/domain/space_manager_prompt_builder.dart';
 import 'package:unburden_app/features/chat/domain/thoughts_prompt_builder.dart';
+import 'package:unburden_app/features/chat/domain/todo_prompt_builder.dart';
 
 void main() {
   group('Space Manager Prompt', () {
@@ -67,6 +69,50 @@ void main() {
       final prompt = buildThoughtsPrompt();
       expect(prompt, isNot(contains('add_items')));
       expect(prompt, isNot(contains('save_locations')));
+    });
+  });
+
+  group('List Tool Prompt', () {
+    test('contains add_to_list action', () {
+      final prompt = buildListToolPrompt(listName: 'grocery', storedItems: []);
+      expect(prompt, contains('add_to_list'));
+    });
+
+    test('includes the list name in the action schema', () {
+      final prompt = buildListToolPrompt(listName: 'grocery', storedItems: []);
+      expect(prompt, contains('grocery'));
+    });
+
+    test('includes stored items', () {
+      final prompt = buildListToolPrompt(listName: 'grocery', storedItems: ['milk', 'eggs']);
+      expect(prompt, contains('milk'));
+      expect(prompt, contains('eggs'));
+    });
+
+    test('does not mention old per-tool action names', () {
+      final prompt = buildListToolPrompt(listName: 'grocery', storedItems: []);
+      expect(prompt, isNot(contains('add_items')));
+      expect(prompt, isNot(contains('add_todo')));
+    });
+  });
+
+  group('Todo Prompt', () {
+    test('contains add_todo action', () {
+      final prompt = buildTodoPrompt(storedTodos: []);
+      expect(prompt, contains('add_todo'));
+    });
+
+    test('includes existing todos in prompt', () {
+      final prompt = buildTodoPrompt(storedTodos: ['buy milk', 'call dentist']);
+      expect(prompt, contains('buy milk'));
+      expect(prompt, contains('call dentist'));
+    });
+
+    test('does not mention other tool actions', () {
+      final prompt = buildTodoPrompt(storedTodos: []);
+      expect(prompt, isNot(contains('add_items')));
+      expect(prompt, isNot(contains('save_locations')));
+      expect(prompt, isNot(contains('add_thought')));
     });
   });
 }

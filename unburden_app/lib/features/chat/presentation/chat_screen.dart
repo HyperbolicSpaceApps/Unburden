@@ -10,12 +10,15 @@ import 'package:unburden_app/features/space_manager/data/space_repository_interf
 import 'package:unburden_app/features/space_manager/domain/storage_location.dart';
 import 'package:unburden_app/features/thoughts/data/thought_repository_interface.dart';
 import 'package:unburden_app/features/thoughts/domain/thought_entry.dart';
+import 'package:unburden_app/features/todo/data/todo_repository_interface.dart';
+import 'package:unburden_app/features/todo/domain/todo_item.dart';
 
 class ChatScreen extends StatefulWidget {
   final LlmClient llm;
   final SpaceRepositoryInterface spaceRepository;
   final GroceryRepositoryInterface groceryRepository;
   final ThoughtRepositoryInterface thoughtRepository;
+  final TodoRepositoryInterface todoRepository;
 
   const ChatScreen({
     super.key,
@@ -23,6 +26,7 @@ class ChatScreen extends StatefulWidget {
     required this.spaceRepository,
     required this.groceryRepository,
     required this.thoughtRepository,
+    required this.todoRepository,
   });
 
   @override
@@ -54,9 +58,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final locations = await widget.spaceRepository.getAll();
     final groceryItems = await widget.groceryRepository.getAll();
+    final todos = await widget.todoRepository.getAll();
     final systemPrompt = buildChatPrompt(
       storedLocationSummaries: locations.map((l) => '${l.name}: ${l.contents.join(', ')}').toList(),
       storedGroceryItems: groceryItems.map((i) => i.name).toList(),
+      storedTodos: todos.map((t) => t.text).toList(),
     );
 
     _history.add({'role': 'user', 'content': input});
@@ -114,14 +120,22 @@ class _ChatScreenState extends State<ChatScreen> {
         result = buildConfirmationMessage(
           rawLocations.map((item) => (item as Map<String, dynamic>)['name'] as String).toList(),
         );
-      } else if (action == 'add_items') {
-        final rawItems = decoded['items'] as List<dynamic>;
-        for (final item in rawItems) {
-          final map = item as Map<String, dynamic>;
-          await widget.groceryRepository.add(GroceryItem(name: map['name'] as String));
+      } else if (action == 'add_to_list') {
+        final listName = decoded['list'] as String;
+        final items = (decoded['items'] as List<dynamic>).cast<String>();
+        if (listName == 'grocery') {
+          for (final item in items) {
+            await widget.groceryRepository.add(GroceryItem(name: item));
+          }
+          result = '${items.join(', ')} added to grocery list';
+        } else if (listName == 'todo') {
+          for (final item in items) {
+            await widget.todoRepository.add(TodoItem(text: item));
+          }
+          result = 'added to todo list: ${items.join(', ')}';
+        } else {
+          throw Exception('Unknown list: $listName');
         }
-        final names = rawItems.map((i) => (i as Map<String, dynamic>)['name'] as String).toList();
-        result = '${names.join(', ')} added to grocery list';
       } else if (action == 'add_thought') {
         await widget.thoughtRepository.add(ThoughtEntry(text: decoded['text'] as String));
         result = 'thought captured';

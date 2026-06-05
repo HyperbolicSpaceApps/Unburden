@@ -6,6 +6,7 @@ import 'package:unburden_app/features/chat/presentation/chat_screen.dart';
 import 'package:unburden_app/features/grocery/data/fake_grocery_repository.dart';
 import 'package:unburden_app/features/space_manager/data/fake_space_repository.dart';
 import 'package:unburden_app/features/thoughts/data/fake_thought_repository.dart';
+import 'package:unburden_app/features/todo/data/fake_todo_repository.dart';
 
 void main() {
   group('Chat Prompt', () {
@@ -13,6 +14,7 @@ void main() {
       final prompt = buildChatPrompt(
         storedLocationSummaries: ['hallway shelf: tools, umbrella'],
         storedGroceryItems: [],
+        storedTodos: [],
       );
 
       expect(prompt, contains('hallway shelf'));
@@ -21,9 +23,9 @@ void main() {
     });
 
     test('includes grocery tool instructions', () {
-      final prompt = buildChatPrompt(storedLocationSummaries: [], storedGroceryItems: []);
+      final prompt = buildChatPrompt(storedLocationSummaries: [], storedGroceryItems: [], storedTodos: []);
 
-      expect(prompt, contains('add_items'));
+      expect(prompt, contains('add_to_list'));
       expect(prompt, contains('grocery'));
     });
 
@@ -31,6 +33,7 @@ void main() {
       final prompt = buildChatPrompt(
         storedLocationSummaries: [],
         storedGroceryItems: ['potatoes', 'milk'],
+        storedTodos: [],
       );
 
       expect(prompt, contains('potatoes'));
@@ -38,7 +41,7 @@ void main() {
     });
 
     test('includes thoughts tool instructions', () {
-      final prompt = buildChatPrompt(storedLocationSummaries: [], storedGroceryItems: []);
+      final prompt = buildChatPrompt(storedLocationSummaries: [], storedGroceryItems: [], storedTodos: []);
 
       expect(prompt, contains('add_thought'));
     });
@@ -47,6 +50,7 @@ void main() {
       final prompt = buildChatPrompt(
         storedLocationSummaries: [],
         storedGroceryItems: ['milk', 'potatoes'],
+        storedTodos: [],
       );
 
       expect(prompt, contains("I didn't understand"));
@@ -62,8 +66,9 @@ void main() {
 ''';
       const turn2Response = '''
 {
-  "action": "add_items",
-  "items": [{"name": "mayo"}]
+  "action": "add_to_list",
+  "list": "grocery",
+  "items": ["mayo"]
 }
 ''';
 
@@ -76,6 +81,7 @@ void main() {
             spaceRepository: FakeSpaceRepository(),
             groceryRepository: FakeGroceryRepository(),
             thoughtRepository: FakeThoughtRepository(),
+            todoRepository: FakeTodoRepository(),
           ),
         ),
       );

@@ -11,6 +11,7 @@ import 'package:unburden_app/features/chat/presentation/chat_screen.dart';
 import 'package:unburden_app/features/grocery/data/grocery_repository.dart';
 import 'package:unburden_app/features/space_manager/data/space_repository.dart';
 import 'package:unburden_app/features/thoughts/data/thought_repository.dart';
+import 'package:unburden_app/features/todo/data/todo_repository.dart';
 
 void main({String? dbPath, LlmClient? llmClient}) async {
   // see app_logger to force verbose test logs
@@ -41,6 +42,7 @@ void main({String? dbPath, LlmClient? llmClient}) async {
         spaceRepository: SpaceRepository(database: db),
         groceryRepository: GroceryRepository(database: db),
         thoughtRepository: ThoughtRepository(database: db),
+        todoRepository: TodoRepository(database: db),
       ),
     ),
   );

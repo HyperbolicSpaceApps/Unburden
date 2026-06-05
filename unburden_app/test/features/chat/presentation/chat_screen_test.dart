@@ -6,6 +6,7 @@ import 'package:unburden_app/features/chat/presentation/chat_screen.dart';
 import 'package:unburden_app/features/grocery/data/fake_grocery_repository.dart';
 import 'package:unburden_app/features/space_manager/data/fake_space_repository.dart';
 import 'package:unburden_app/features/thoughts/data/fake_thought_repository.dart';
+import 'package:unburden_app/features/todo/data/fake_todo_repository.dart';
 
 void main() {
   group('ChatScreen', () {
@@ -17,6 +18,7 @@ void main() {
             spaceRepository: FakeSpaceRepository(),
             groceryRepository: FakeGroceryRepository(),
             thoughtRepository: FakeThoughtRepository(),
+            todoRepository: FakeTodoRepository(),
           ),
         ),
       );
@@ -33,6 +35,7 @@ void main() {
             spaceRepository: FakeSpaceRepository(),
             groceryRepository: FakeGroceryRepository(),
             thoughtRepository: FakeThoughtRepository(),
+            todoRepository: FakeTodoRepository(),
           ),
         ),
       );
@@ -72,6 +75,7 @@ void main() {
               spaceRepository: repository,
               groceryRepository: FakeGroceryRepository(),
               thoughtRepository: FakeThoughtRepository(),
+              todoRepository: FakeTodoRepository(),
             ),
           ),
         );
@@ -113,6 +117,7 @@ void main() {
             spaceRepository: repository,
             groceryRepository: FakeGroceryRepository(),
             thoughtRepository: FakeThoughtRepository(),
+            todoRepository: FakeTodoRepository(),
           ),
         ),
       );
@@ -171,6 +176,7 @@ void main() {
             spaceRepository: repository,
             groceryRepository: FakeGroceryRepository(),
             thoughtRepository: FakeThoughtRepository(),
+            todoRepository: FakeTodoRepository(),
           ),
         ),
       );
@@ -219,6 +225,7 @@ void main() {
             spaceRepository: FakeSpaceRepository(),
             groceryRepository: FakeGroceryRepository(),
             thoughtRepository: FakeThoughtRepository(),
+            todoRepository: FakeTodoRepository(),
           ),
         ),
       );
@@ -239,6 +246,7 @@ void main() {
             spaceRepository: FakeSpaceRepository(),
             groceryRepository: FakeGroceryRepository(),
             thoughtRepository: FakeThoughtRepository(),
+            todoRepository: FakeTodoRepository(),
           ),
         ),
       );
@@ -261,6 +269,7 @@ void main() {
             spaceRepository: FakeSpaceRepository(),
             groceryRepository: FakeGroceryRepository(),
             thoughtRepository: FakeThoughtRepository(),
+            todoRepository: FakeTodoRepository(),
           ),
         ),
       );
@@ -280,6 +289,7 @@ void main() {
             spaceRepository: FakeSpaceRepository(),
             groceryRepository: FakeGroceryRepository(),
             thoughtRepository: FakeThoughtRepository(),
+            todoRepository: FakeTodoRepository(),
           ),
         ),
       );
@@ -287,13 +297,12 @@ void main() {
       expect(find.text("welcome to Unburden. what's up?"), findsOneWidget);
     });
 
-    testWidgets('grocery input is stored and confirmation appears in chat', (tester) async {
+    testWidgets('add_to_list for grocery saves item and shows confirmation', (tester) async {
       const mockResponse = '''
 {
-  "action": "add_items",
-  "items": [
-    {"name": "potatoes"}
-  ]
+  "action": "add_to_list",
+  "list": "grocery",
+  "items": ["potatoes"]
 }
 ''';
 
@@ -306,6 +315,7 @@ void main() {
             spaceRepository: FakeSpaceRepository(),
             groceryRepository: repo,
             thoughtRepository: FakeThoughtRepository(),
+            todoRepository: FakeTodoRepository(),
           ),
         ),
       );
@@ -314,11 +324,45 @@ void main() {
       await tester.tap(find.byIcon(Icons.send));
       await tester.pumpAndSettle();
 
-      expect(find.text('potatoes added to grocery list'), findsOneWidget);
+      expect(find.textContaining('potatoes'), findsWidgets);
 
       final saved = await repo.getAll();
       expect(saved.length, equals(1));
       expect(saved.first.name, equals('potatoes'));
+    });
+
+    testWidgets('add_to_list for todo saves item and shows confirmation', (tester) async {
+      const mockResponse = '''
+{
+  "action": "add_to_list",
+  "list": "todo",
+  "items": ["call the dentist"]
+}
+''';
+
+      final repo = FakeTodoRepository();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChatScreen(
+            llm: MockLlmClient(fixedResponse: mockResponse),
+            spaceRepository: FakeSpaceRepository(),
+            groceryRepository: FakeGroceryRepository(),
+            thoughtRepository: FakeThoughtRepository(),
+            todoRepository: repo,
+          ),
+        ),
+      );
+
+      await tester.enterText(find.byType(TextField), 'add to my todo: call the dentist');
+      await tester.tap(find.byIcon(Icons.send));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('call the dentist'), findsWidgets);
+
+      final saved = await repo.getAll();
+      expect(saved.length, equals(1));
+      expect(saved.first.text, equals('call the dentist'));
     });
 
     testWidgets('when llm.complete() throws, error message includes the reason', (tester) async {
@@ -329,6 +373,7 @@ void main() {
             spaceRepository: FakeSpaceRepository(),
             groceryRepository: FakeGroceryRepository(),
             thoughtRepository: FakeThoughtRepository(),
+            todoRepository: FakeTodoRepository(),
           ),
         ),
       );
@@ -356,6 +401,7 @@ void main() {
               spaceRepository: FakeSpaceRepository(),
               groceryRepository: FakeGroceryRepository(),
               thoughtRepository: FakeThoughtRepository(),
+              todoRepository: FakeTodoRepository(),
             ),
           ),
         );

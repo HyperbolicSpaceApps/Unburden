@@ -18,5 +18,13 @@ void main() {
     test('routes another thought input to thoughts tool', () {
       expect(routeInput('had an interesting idea about the app'), Tool.thoughts);
     });
+
+    test('routes todo input to todo tool', () {
+      expect(routeInput('add to my todo list: call the dentist'), Tool.todo);
+    });
+
+    test('routes another todo input to todo tool', () {
+      expect(routeInput('remind me to submit the report'), Tool.todo);
+    });
   });
 }

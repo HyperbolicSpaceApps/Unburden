@@ -20,6 +20,7 @@ void main() {
       final systemPrompt = buildChatPrompt(
         storedLocationSummaries: ['hallway shelf: tools, umbrella'],
         storedGroceryItems: [],
+        storedTodos: [],
       );
 
       final raw = await llm.complete(systemPrompt, [
@@ -58,6 +59,7 @@ Respond with only a JSON object: {"invented": true} or {"invented": false}
       final systemPrompt = buildChatPrompt(
         storedLocationSummaries: [],
         storedGroceryItems: ['milk', 'potatoes'],
+        storedTodos: [],
       );
 
       final raw = await llm.complete(systemPrompt, [
@@ -78,7 +80,11 @@ Respond with only a JSON object: {"invented": true} or {"invented": false}
       }
 
       final llm = GroqLlmClient(apiKey: apiKey);
-      final systemPrompt = buildChatPrompt(storedLocationSummaries: [], storedGroceryItems: []);
+      final systemPrompt = buildChatPrompt(
+        storedLocationSummaries: [],
+        storedGroceryItems: [],
+        storedTodos: [],
+      );
 
       final raw = await llm.complete(systemPrompt, [
         {'role': 'user', 'content': 'xzqwpfj'},
@@ -100,6 +106,7 @@ Respond with only a JSON object: {"invented": true} or {"invented": false}
       final systemPrompt = buildChatPrompt(
         storedLocationSummaries: [],
         storedGroceryItems: ['milk', 'potatoes'],
+        storedTodos: [],
         toolRules: {
           'grocery': ['when I say "grocery", always show my current list'],
         },
@@ -130,7 +137,7 @@ Respond with only a JSON object: {"showed_list": true} or {"showed_list": false}
       expect(judgeResult['showed_list'], isTrue);
     });
 
-    test('resolves "yes" to add_items when prior turn asked about a grocery item', () async {
+    test('returns add_to_list action for grocery input', () async {
       const apiKey = String.fromEnvironment('UNBURDEN_GROQ_API_KEY');
       if (apiKey.isEmpty) {
         markTestSkipped('UNBURDEN_GROQ_API_KEY not set');
@@ -138,7 +145,59 @@ Respond with only a JSON object: {"showed_list": true} or {"showed_list": false}
       }
 
       final llm = GroqLlmClient(apiKey: apiKey);
-      final systemPrompt = buildChatPrompt(storedLocationSummaries: [], storedGroceryItems: []);
+      final systemPrompt = buildChatPrompt(
+        storedLocationSummaries: [],
+        storedGroceryItems: [],
+        storedTodos: [],
+      );
+
+      final raw = await llm.complete(systemPrompt, [
+        {'role': 'user', 'content': 'I need to buy milk'},
+      ]);
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+
+      expect(decoded['action'], equals('add_to_list'));
+      expect(decoded['list'], equals('grocery'));
+      expect((decoded['items'] as List).join(' ').toLowerCase(), contains('milk'));
+    });
+
+    test('returns add_to_list action for todo input', () async {
+      const apiKey = String.fromEnvironment('UNBURDEN_GROQ_API_KEY');
+      if (apiKey.isEmpty) {
+        markTestSkipped('UNBURDEN_GROQ_API_KEY not set');
+        return;
+      }
+
+      final llm = GroqLlmClient(apiKey: apiKey);
+      final systemPrompt = buildChatPrompt(
+        storedLocationSummaries: [],
+        storedGroceryItems: [],
+        storedTodos: [],
+      );
+
+      final raw = await llm.complete(systemPrompt, [
+        {'role': 'user', 'content': 'add to my todo list: call the dentist'},
+      ]);
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+
+      expect(decoded['action'], equals('add_to_list'));
+      expect(decoded['list'], equals('todo'));
+      expect((decoded['items'] as List).join(' ').toLowerCase(), contains('dentist'));
+    });
+
+    test('resolves "yes" to add_to_list when prior turn asked about a grocery item', () async {
+      const apiKey = String.fromEnvironment('UNBURDEN_GROQ_API_KEY');
+      if (apiKey.isEmpty) {
+        markTestSkipped('UNBURDEN_GROQ_API_KEY not set');
+        return;
+      }
+
+      final llm = GroqLlmClient(apiKey: apiKey);
+      final systemPrompt = buildChatPrompt(
+        storedLocationSummaries: [],
+        storedGroceryItems: [],
+        storedTodos: [],
+      );
 
       final raw2 = await llm.complete(systemPrompt, [
         {'role': 'user', 'content': 'I was thinking about mayo'},
@@ -150,9 +209,10 @@ Respond with only a JSON object: {"showed_list": true} or {"showed_list": false}
       ]);
       final decoded2 = jsonDecode(raw2) as Map<String, dynamic>;
 
-      expect(decoded2['action'], equals('add_items'));
+      expect(decoded2['action'], equals('add_to_list'));
+      expect(decoded2['list'], equals('grocery'));
       final items = decoded2['items'] as List<dynamic>;
-      expect(items.any((i) => (i['name'] as String).toLowerCase().contains('mayo')), isTrue);
+      expect(items.any((i) => i.toString().toLowerCase().contains('mayo')), isTrue);
     });
   });
 }
