@@ -11,8 +11,8 @@ class GroqLlmClient implements LlmClient {
   GroqLlmClient({required this.apiKey, this.model = 'llama-3.1-8b-instant'});
 
   @override
-  Future<String> complete(String prompt) async {
-    AppLogger.groq('sending request prompt: $prompt');
+  Future<String> complete(String systemPrompt, List<Map<String, String>> messages) async {
+    AppLogger.groq('sending request, ${messages.length} messages');
 
     final response = await http.post(
       Uri.parse('https://api.groq.com/openai/v1/chat/completions'),
@@ -20,7 +20,8 @@ class GroqLlmClient implements LlmClient {
       body: jsonEncode({
         'model': model,
         'messages': [
-          {'role': 'user', 'content': prompt},
+          {'role': 'system', 'content': systemPrompt},
+          ...messages,
         ],
       }),
     );
@@ -29,13 +30,10 @@ class GroqLlmClient implements LlmClient {
     AppLogger.groq('raw response body: ${response.body}');
 
     final json = jsonDecode(response.body);
-    AppLogger.groq('decoded json: $json');
-
     final content = json['choices']?[0]?['message']?['content'];
-    AppLogger.groq('extracted content: $content');
 
     if (content == null) {
-      throw Exception("Groq returned null content");
+      throw Exception('Groq returned null content');
     }
 
     return content as String;

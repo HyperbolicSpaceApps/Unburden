@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 /// Simple logger. Set [AppLogger.enabled] to true during development.
 class AppLogger {
-  static bool enabled = false;
+  static bool enabled = true;
 
   static void ui(String message) => _log('🟢 [UI]', message);
   static void build(String message) => _log('🟣 [BUILD]', message);

@@ -5,7 +5,7 @@ class ThrowingLlmClient implements LlmClient {
   ThrowingLlmClient([this.message = 'network error']);
 
   @override
-  Future<String> complete(String prompt) async {
+  Future<String> complete(String systemPrompt, List<Map<String, String>> messages) async {
     throw Exception(message);
   }
 }

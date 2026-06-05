@@ -33,6 +33,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   final List<_Message> _messages = [];
+  final List<Map<String, String>> _history = [];
   bool _loading = false;
 
   @override
@@ -53,16 +54,18 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final locations = await widget.spaceRepository.getAll();
     final groceryItems = await widget.groceryRepository.getAll();
-    final prompt = buildChatPrompt(
-      userInput: input,
+    final systemPrompt = buildChatPrompt(
       storedLocationSummaries: locations.map((l) => '${l.name}: ${l.contents.join(', ')}').toList(),
       storedGroceryItems: groceryItems.map((i) => i.name).toList(),
     );
 
+    _history.add({'role': 'user', 'content': input});
+
     final String raw;
     try {
-      raw = await widget.llm.complete(prompt);
+      raw = await widget.llm.complete(systemPrompt, _history);
     } catch (e) {
+      _history.removeLast(); // don't poison history with failed turns
       if (!mounted) return;
       setState(() {
         _messages.add(_Message(text: 'Error: $e', isUser: false));
@@ -138,6 +141,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (!mounted) return;
     setState(() {
       _messages.add(_Message(text: message, isUser: false));
+      _history.add({'role': 'assistant', 'content': message});
       _loading = false;
     });
 

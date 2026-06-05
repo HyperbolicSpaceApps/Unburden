@@ -7,21 +7,21 @@ class MockLlmClient implements LlmClient {
   MockLlmClient({this.fixedResponse});
 
   @override
-  Future<String> complete(String prompt) async {
-    AppLogger.mock('received prompt: $prompt');
+  Future<String> complete(String systemPrompt, List<Map<String, String>> messages) async {
+    AppLogger.mock('received ${messages.length} messages');
 
     if (fixedResponse != null) {
       AppLogger.mock('using fixed response: $fixedResponse');
       return fixedResponse!;
     }
 
-    final response = '''
+    const response = '''
 {
   "action": "answer",
   "message": "I'm not sure how to help with that yet."
 }
 ''';
-    AppLogger.mock('returning response: $response');
+    AppLogger.mock('returning default response');
     return response;
   }
 }

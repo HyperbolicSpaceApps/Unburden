@@ -159,3 +159,27 @@ flutter test integration_test/llm_behavior_test.dart
 * Confirmation messages are built deterministically by the app, never by the LLM
 * One failing test at a time: write it, confirm it fails, implement minimum to pass, move on
 * Real device session drives the next failing test — friction first, architecture second
+
+session 5:
+Tests cleaned up:
+
+Removed the shelf sub-levels test (no longer relevant)
+"grocery" → shows list (with tool rule), judge: showed_list
+"xzqwpfj" → clarification, judge: clarified
+"where are my comic books?" → no invention, judge: invented
+
+Prompt fix:
+
+Added Do not suggest or invent location. to space manager block — fixed the hallucination test
+
+New concept landed:
+
+toolRules: Map<String, List<String>> parameter on buildChatPrompt
+rulesBlock() helper injects per-tool rules into the prompt
+Defaults to empty — no existing call sites broken
+
+Parked for next session:
+
+RuleRepository — storage for tool rules (SQLite, same pattern as grocery/thoughts)
+Agent-level and global rules (same injection pattern, different scope)
+The "grocery" ambiguity question is now resolved by tool rules rather than prompt heuristics

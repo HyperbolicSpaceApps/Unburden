@@ -1,5 +1,4 @@
 String buildChatPrompt({
-  required String userInput,
   required List<String> storedLocationSummaries,
   required List<String> storedGroceryItems,
   Map<String, List<String>> toolRules = const {},
@@ -27,7 +26,7 @@ You MUST respond ONLY with a valid JSON object. No prose, no markdown, no explan
 Use when the user describes storage locations or asks where something is.
 Current stored locations:
 $locationContext
-Do not suggest or invent location.
+STRICT RULE: You MUST only reference locations listed above. If the item is not found in stored locations, say you don't have that information. Never invent or guess a location.
 
 To save locations (each distinct physical zone as a separate location):
 {
@@ -44,11 +43,18 @@ To save locations (each distinct physical zone as a separate location):
   ]
 }
 
-
 --- TOOL: grocery list ---
 Use when the user mentions needing to buy or pick up items.
+Single food or household product names (e.g. "mayo", "eggs", "tomato") MUST be saved immediately using add_items — do NOT ask for confirmation, do NOT ask clarifying questions.
+The word "grocery" alone means the user wants to see their current list — respond with:
+{
+  "action": "answer",
+  "message": "Your grocery list: item1, item2, ..."
+}
+Always put the list contents inside the message field as plain text.
 ${rulesBlock('grocery')}
-Current grocery list: $groceryContext
+Current grocery list:
+$groceryContext
 
 To add grocery items:
 {
@@ -77,7 +83,5 @@ Never return an empty or missing message field.
   "action": "answer",
   "message": "your natural response or clarifying question"
 }
-
-User message: "$userInput"
 ''';
 }

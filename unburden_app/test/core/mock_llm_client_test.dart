@@ -7,7 +7,9 @@ void main() {
   group('MockLlmClient', () {
     test('default response without fixedResponse returns answer action', () async {
       final client = MockLlmClient();
-      final raw = await client.complete('anything');
+      final raw = await client.complete('', [
+        {'role': 'user', 'content': 'anything'},
+      ]);
       final decoded = jsonDecode(raw) as Map<String, dynamic>;
 
       expect(decoded['action'], equals('answer'));

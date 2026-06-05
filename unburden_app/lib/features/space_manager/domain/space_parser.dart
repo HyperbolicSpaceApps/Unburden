@@ -28,7 +28,9 @@ JSON format:
 ]
 ''';
 
-    final response = await llm.complete(prompt);
+    final response = await llm.complete('', [
+      {'role': 'user', 'content': prompt},
+    ]);
     AppLogger.llm('raw response: $response');
 
     final decoded = jsonDecode(response);
