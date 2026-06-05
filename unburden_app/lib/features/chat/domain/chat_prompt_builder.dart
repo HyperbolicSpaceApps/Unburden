@@ -51,7 +51,8 @@ The word "grocery" alone means the user wants to see their current list — resp
   "action": "answer",
   "message": "Your grocery list: item1, item2, ..."
 }
-Always put the list contents inside the message field as plain text.
+In that case, always put the list contents inside the message field as plain text.
+
 ${rulesBlock('grocery')}
 Current grocery list:
 $groceryContext

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:unburden_app/core/app_database.dart';
@@ -74,6 +76,32 @@ void main() {
 
       final all = await repo.getAll();
       expect(all.length, 1);
+    });
+  });
+
+  group('persistence across app restart', () {
+    const dbPath = 'test_persistence_space.db';
+
+    tearDown(() async {
+      final file = File(dbPath);
+      if (await file.exists()) await file.delete();
+    });
+
+    test('data written by one instance is readable by a new instance on the same path', () async {
+      final db1 = AppDatabase(dbPath: dbPath);
+      final repo1 = SpaceRepository(database: db1);
+      await repo1.add(StorageLocation(
+        name: 'hallway shelf',
+        contents: ['tools'],
+        accessNote: '',
+      ));
+
+      final db2 = AppDatabase(dbPath: dbPath);
+      final repo2 = SpaceRepository(database: db2);
+      final items = await repo2.getAll();
+
+      expect(items.length, equals(1));
+      expect(items.first.name, equals('hallway shelf'));
     });
   });
 }
