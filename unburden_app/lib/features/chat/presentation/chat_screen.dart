@@ -4,29 +4,21 @@ import 'package:flutter/material.dart';
 import 'package:unburden_app/core/llm_client.dart';
 import 'package:unburden_app/features/chat/domain/chat_prompt_builder.dart';
 import 'package:unburden_app/features/chat/domain/confirmation_builder.dart';
-import 'package:unburden_app/features/grocery/data/grocery_repository_interface.dart';
-import 'package:unburden_app/features/grocery/domain/grocery_item.dart';
-import 'package:unburden_app/features/space_manager/data/space_repository_interface.dart';
-import 'package:unburden_app/features/space_manager/domain/storage_location.dart';
-import 'package:unburden_app/features/thoughts/data/thought_repository_interface.dart';
-import 'package:unburden_app/features/thoughts/domain/thought_entry.dart';
-import 'package:unburden_app/features/todo/data/todo_repository_interface.dart';
-import 'package:unburden_app/features/todo/domain/todo_item.dart';
+import 'package:unburden_app/features/chat/domain/list_tool.dart';
+import 'package:unburden_app/features/chat/domain/list_tool_prompt_builder.dart';
+import 'package:unburden_app/features/where_is_it/data/where_is_it_repository_interface.dart';
+import 'package:unburden_app/features/where_is_it/domain/storage_location.dart';
 
 class ChatScreen extends StatefulWidget {
   final LlmClient llm;
-  final SpaceRepositoryInterface spaceRepository;
-  final GroceryRepositoryInterface groceryRepository;
-  final ThoughtRepositoryInterface thoughtRepository;
-  final TodoRepositoryInterface todoRepository;
+  final WhereIsItRepositoryInterface whereIsItRepository;
+  final List<ListTool> listTools;
 
   const ChatScreen({
     super.key,
     required this.llm,
-    required this.spaceRepository,
-    required this.groceryRepository,
-    required this.thoughtRepository,
-    required this.todoRepository,
+    required this.whereIsItRepository,
+    required this.listTools,
   });
 
   @override
@@ -56,13 +48,22 @@ class _ChatScreenState extends State<ChatScreen> {
     });
     _controller.clear();
 
-    final locations = await widget.spaceRepository.getAll();
-    final groceryItems = await widget.groceryRepository.getAll();
-    final todos = await widget.todoRepository.getAll();
+    final locations = await widget.whereIsItRepository.getAll();
+    final listSections = <String>[];
+    for (final tool in widget.listTools) {
+      final items = await tool.repository.getAll();
+      listSections.add(
+        buildListToolPrompt(
+          listName: tool.name,
+          storedItems: items,
+          useWhen: tool.promptDescription,
+        ),
+      );
+    }
     final systemPrompt = buildChatPrompt(
-      storedLocationSummaries: locations.map((l) => '${l.name}: ${l.contents.join(', ')}').toList(),
-      storedGroceryItems: groceryItems.map((i) => i.name).toList(),
-      storedTodos: todos.map((t) => t.text).toList(),
+      storedLocationSummaries:
+          locations.map((l) => '${l.name}: ${l.contents.join(', ')}').toList(),
+      listToolSections: listSections,
     );
 
     _history.add({'role': 'user', 'content': input});
@@ -71,7 +72,7 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       raw = await widget.llm.complete(systemPrompt, _history);
     } catch (e) {
-      _history.removeLast(); // don't poison history with failed turns
+      _history.removeLast();
       if (!mounted) return;
       setState(() {
         _messages.add(_Message(text: 'Error: $e', isUser: false));
@@ -79,6 +80,7 @@ class _ChatScreenState extends State<ChatScreen> {
       });
       return;
     }
+
     final cleaned = raw
         .replaceAll(RegExp(r'```json\s*'), '')
         .replaceAll(RegExp(r'```\s*'), '')
@@ -109,13 +111,9 @@ class _ChatScreenState extends State<ChatScreen> {
           final map = item as Map<String, dynamic>;
           final location = StorageLocation(
             name: map['name'] as String,
-            widthCm: (map['width_cm'] as num?)?.toDouble(),
-            depthCm: (map['depth_cm'] as num?)?.toDouble(),
-            heightCm: (map['height_cm'] as num?)?.toDouble(),
             contents: (map['contents'] as List<dynamic>).cast<String>(),
-            accessNote: map['access_note'] as String? ?? '',
           );
-          await widget.spaceRepository.add(location);
+          await widget.whereIsItRepository.add(location);
         }
         result = buildConfirmationMessage(
           rawLocations.map((item) => (item as Map<String, dynamic>)['name'] as String).toList(),
@@ -123,22 +121,12 @@ class _ChatScreenState extends State<ChatScreen> {
       } else if (action == 'add_to_list') {
         final listName = decoded['list'] as String;
         final items = (decoded['items'] as List<dynamic>).cast<String>();
-        if (listName == 'grocery') {
-          for (final item in items) {
-            await widget.groceryRepository.add(GroceryItem(name: item));
-          }
-          result = '${items.join(', ')} added to grocery list';
-        } else if (listName == 'todo') {
-          for (final item in items) {
-            await widget.todoRepository.add(TodoItem(text: item));
-          }
-          result = 'added to todo list: ${items.join(', ')}';
-        } else {
-          throw Exception('Unknown list: $listName');
-        }
-      } else if (action == 'add_thought') {
-        await widget.thoughtRepository.add(ThoughtEntry(text: decoded['text'] as String));
-        result = 'thought captured';
+        final tool = widget.listTools.firstWhere(
+          (t) => t.name == listName,
+          orElse: () => throw Exception('Unknown list: $listName'),
+        );
+        await tool.repository.addAll(items);
+        result = 'added to $listName: ${items.join(', ')}';
       } else {
         result = decoded['message'] as String;
       }

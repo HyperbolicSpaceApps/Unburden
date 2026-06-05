@@ -10,7 +10,7 @@ class AppDatabase {
     if (_db != null) return _db!;
     _db = await openDatabase(
       dbPath,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE storage_locations (
@@ -43,6 +43,26 @@ class AppDatabase {
             created_at INTEGER NOT NULL
           )
         ''');
+        await db.execute('''
+          CREATE TABLE list_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            list_name TEXT NOT NULL,
+            text TEXT NOT NULL,
+            created_at INTEGER NOT NULL
+          )
+        ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('''
+            CREATE TABLE list_items (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              list_name TEXT NOT NULL,
+              text TEXT NOT NULL,
+              created_at INTEGER NOT NULL
+            )
+          ''');
+        }
       },
     );
     return _db!;

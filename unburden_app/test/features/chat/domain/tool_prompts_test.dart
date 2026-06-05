@@ -4,8 +4,38 @@ import 'package:unburden_app/features/chat/domain/list_tool_prompt_builder.dart'
 import 'package:unburden_app/features/chat/domain/space_manager_prompt_builder.dart';
 import 'package:unburden_app/features/chat/domain/thoughts_prompt_builder.dart';
 import 'package:unburden_app/features/chat/domain/todo_prompt_builder.dart';
+import 'package:unburden_app/features/chat/domain/where_is_it_prompt_builder.dart';
 
 void main() {
+  group('Where Is It Prompt', () {
+    test('contains save_locations action', () {
+      final prompt = buildWhereIsItPrompt(storedLocationSummaries: []);
+      expect(prompt, contains('save_locations'));
+    });
+
+    test('includes stored location summaries', () {
+      final prompt = buildWhereIsItPrompt(
+        storedLocationSummaries: ['hallway shelf: tools, umbrella'],
+      );
+      expect(prompt, contains('hallway shelf'));
+      expect(prompt, contains('tools'));
+    });
+
+    test('schema has no dimensions or access note', () {
+      final prompt = buildWhereIsItPrompt(storedLocationSummaries: []);
+      expect(prompt, isNot(contains('width_cm')));
+      expect(prompt, isNot(contains('depth_cm')));
+      expect(prompt, isNot(contains('height_cm')));
+      expect(prompt, isNot(contains('access_note')));
+    });
+
+    test('does not mention list actions', () {
+      final prompt = buildWhereIsItPrompt(storedLocationSummaries: []);
+      expect(prompt, isNot(contains('add_to_list')));
+      expect(prompt, isNot(contains('add_thought')));
+    });
+  });
+
   group('Space Manager Prompt', () {
     test('includes stored location summaries', () {
       final prompt = buildSpaceManagerPrompt(

@@ -1,4 +1,4 @@
-enum Tool { grocery, thoughts, space, todo }
+enum Tool { grocery, thoughts, space, todo, whereIsIt }
 
 // TODO(routing): keyword matching is a placeholder.
 // Replace with LLM-based routing once the tool set stabilises.
@@ -46,8 +46,11 @@ Tool routeInput(String input) {
     'add to my list',
   ];
 
+  const whereIsItKeywords = ['shelf', 'drawer', 'wardrobe', 'cabinet', 'where is', 'stored in', 'have a'];
+
   if (groceryKeywords.any((k) => lower.contains(k))) return Tool.grocery;
   if (todoKeywords.any((k) => lower.contains(k))) return Tool.todo;
+  if (whereIsItKeywords.any((k) => lower.contains(k))) return Tool.whereIsIt;
   if (thoughtKeywords.any((k) => lower.contains(k))) return Tool.thoughts;
 
   return Tool.thoughts;

@@ -2,19 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:unburden_app/core/capturing_llm_client.dart';
 import 'package:unburden_app/features/chat/domain/chat_prompt_builder.dart';
+import 'package:unburden_app/features/chat/domain/list_tool.dart';
+import 'package:unburden_app/features/chat/domain/list_tool_prompt_builder.dart';
 import 'package:unburden_app/features/chat/presentation/chat_screen.dart';
-import 'package:unburden_app/features/grocery/data/fake_grocery_repository.dart';
-import 'package:unburden_app/features/space_manager/data/fake_space_repository.dart';
-import 'package:unburden_app/features/thoughts/data/fake_thought_repository.dart';
-import 'package:unburden_app/features/todo/data/fake_todo_repository.dart';
+import 'package:unburden_app/features/list/data/fake_list_repository.dart';
+import 'package:unburden_app/features/where_is_it/data/fake_where_is_it_repository.dart';
 
 void main() {
   group('Chat Prompt', () {
     test('includes stored locations in context when answering a question', () {
       final prompt = buildChatPrompt(
         storedLocationSummaries: ['hallway shelf: tools, umbrella'],
-        storedGroceryItems: [],
-        storedTodos: [],
+        listToolSections: [],
       );
 
       expect(prompt, contains('hallway shelf'));
@@ -23,34 +22,45 @@ void main() {
     });
 
     test('includes grocery tool instructions', () {
-      final prompt = buildChatPrompt(storedLocationSummaries: [], storedGroceryItems: [], storedTodos: []);
+      final section = buildListToolPrompt(listName: 'grocery', storedItems: []);
+      final prompt = buildChatPrompt(
+        storedLocationSummaries: [],
+        listToolSections: [section],
+      );
 
       expect(prompt, contains('add_to_list'));
       expect(prompt, contains('grocery'));
     });
 
     test('includes stored grocery items in context', () {
+      final section = buildListToolPrompt(
+        listName: 'grocery',
+        storedItems: ['potatoes', 'milk'],
+      );
       final prompt = buildChatPrompt(
         storedLocationSummaries: [],
-        storedGroceryItems: ['potatoes', 'milk'],
-        storedTodos: [],
+        listToolSections: [section],
       );
 
       expect(prompt, contains('potatoes'));
       expect(prompt, contains('milk'));
     });
 
-    test('includes thoughts tool instructions', () {
-      final prompt = buildChatPrompt(storedLocationSummaries: [], storedGroceryItems: [], storedTodos: []);
+    test('includes thoughts list instructions', () {
+      final section = buildListToolPrompt(listName: 'thoughts', storedItems: []);
+      final prompt = buildChatPrompt(
+        storedLocationSummaries: [],
+        listToolSections: [section],
+      );
 
-      expect(prompt, contains('add_thought'));
+      expect(prompt, contains('thoughts'));
+      expect(prompt, contains('add_to_list'));
     });
 
     test('fallback instructs LLM to suggest possible actions when intent is ambiguous', () {
       final prompt = buildChatPrompt(
         storedLocationSummaries: [],
-        storedGroceryItems: ['milk', 'potatoes'],
-        storedTodos: [],
+        listToolSections: [],
       );
 
       expect(prompt, contains("I didn't understand"));
@@ -73,15 +83,14 @@ void main() {
 ''';
 
       final llm = CapturingLlmClient(responses: [turn1Response, turn2Response]);
+      final groceryRepo = FakeListRepository();
 
       await tester.pumpWidget(
         MaterialApp(
           home: ChatScreen(
             llm: llm,
-            spaceRepository: FakeSpaceRepository(),
-            groceryRepository: FakeGroceryRepository(),
-            thoughtRepository: FakeThoughtRepository(),
-            todoRepository: FakeTodoRepository(),
+            whereIsItRepository: FakeWhereIsItRepository(),
+            listTools: [ListTool(name: 'grocery', repository: groceryRepo)],
           ),
         ),
       );

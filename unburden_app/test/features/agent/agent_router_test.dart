@@ -26,5 +26,9 @@ void main() {
     test('routes another todo input to todo tool', () {
       expect(routeInput('remind me to submit the report'), Tool.todo);
     });
+
+    test('routes location input to whereIsIt tool', () {
+      expect(routeInput('I have a shelf in the hallway with tools'), Tool.whereIsIt);
+    });
   });
 }

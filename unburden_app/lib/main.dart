@@ -7,15 +7,12 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:unburden_app/core/app_database.dart';
 import 'package:unburden_app/core/groq_llm_client.dart';
 import 'package:unburden_app/core/llm_client.dart';
+import 'package:unburden_app/features/chat/domain/list_tool.dart';
 import 'package:unburden_app/features/chat/presentation/chat_screen.dart';
-import 'package:unburden_app/features/grocery/data/grocery_repository.dart';
-import 'package:unburden_app/features/space_manager/data/space_repository.dart';
-import 'package:unburden_app/features/thoughts/data/thought_repository.dart';
-import 'package:unburden_app/features/todo/data/todo_repository.dart';
+import 'package:unburden_app/features/list/data/list_repository.dart';
+import 'package:unburden_app/features/where_is_it/data/where_is_it_repository.dart';
 
 void main({String? dbPath, LlmClient? llmClient}) async {
-  // see app_logger to force verbose test logs
-
   WidgetsFlutterBinding.ensureInitialized();
 
   if (Platform.isLinux) {
@@ -39,10 +36,15 @@ void main({String? dbPath, LlmClient? llmClient}) async {
     MaterialApp(
       home: ChatScreen(
         llm: resolvedLlm,
-        spaceRepository: SpaceRepository(database: db),
-        groceryRepository: GroceryRepository(database: db),
-        thoughtRepository: ThoughtRepository(database: db),
-        todoRepository: TodoRepository(database: db),
+        whereIsItRepository: WhereIsItRepository(database: db),
+        listTools: [
+          ListTool(name: 'grocery', repository: ListRepository(database: db, listName: 'grocery')),
+          ListTool(name: 'todo', repository: ListRepository(database: db, listName: 'todo')),
+          ListTool(
+            name: 'thoughts',
+            repository: ListRepository(database: db, listName: 'thoughts'),
+          ),
+        ],
       ),
     ),
   );
